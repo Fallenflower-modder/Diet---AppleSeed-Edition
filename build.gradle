@@ -1,0 +1,52 @@
+plugins {
+    id 'eclipse'
+    id 'net.neoforged.moddev' version '1.0.21'
+}
+
+repositories {
+    mavenLocal()
+    maven { url = 'https://neoforged.forgecdn.net/releases' }
+    maven { url = 'https://neoforged.forgecdn.net/mojang-meta' }
+    mavenCentral()
+}
+
+version = '1.0.0'
+base.archivesName = "appleseed"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = "21.1.186"
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        appleseed {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        include '**'
+        expand 'file.jarVersion': project.version
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
