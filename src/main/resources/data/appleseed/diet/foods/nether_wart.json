@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:nether_wart",
+    "nutritions":{
+        "proteins":0.005,
+        "vegetables":0.01
+    }
+}

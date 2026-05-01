@@ -1,0 +1,6 @@
+{
+    "source_item":"minecraft:wheat",
+    "nutritions":{
+        "grains":0.01
+    }
+}

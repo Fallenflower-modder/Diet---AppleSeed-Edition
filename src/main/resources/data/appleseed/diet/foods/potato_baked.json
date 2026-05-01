@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:baked_potato",
+    "nutritions":{
+        "vegetables":0.03,
+        "grains":0.005
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "gui.appleseed.title": "Diet",
+  "gui.appleseed.button": "Diet",
+  "gui.appleseed.close": "Close",
+  "tooltip.appleseed.nutrition": "Nutrition Value:",
+  "tooltip.appleseed.effects": "Current Effects:",
+  "tooltip.appleseed.effects.active": "✅ Diet System Active",
+  "tooltip.appleseed.effects.inactive": "❌ Diet System Inactive",
+  "diet.group.fruits": "Fruits",
+  "diet.group.vegetables": "Vegetables",
+  "diet.group.proteins": "Protein",
+  "diet.group.grains": "Grains",
+  "diet.group.sugars": "Sugars",
+  "gamerule.keepNutritions": "Keep Nutritions on Death",
+  "appleseed.calculation.progress": "§e[AppleSeed]§r Calculating food nutrition: %d/%d (%d succeeded)",
+  "appleseed.calculation.complete": "§a[AppleSeed]§r Food nutrition calculation complete!"
+}

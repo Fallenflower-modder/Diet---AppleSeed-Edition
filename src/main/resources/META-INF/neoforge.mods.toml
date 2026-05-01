@@ -1,0 +1,20 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="LGPLv3"
+logoFile="META-INF/logo.png"
+
+[[mods]]
+modId="appleseed"
+version="1.0.0"
+displayName="Diet - AppleSeed Edition"
+authors="DrownedCloud"
+description='''
+Diet system for Minecraft - balanced eating brings benefits!
+'''
+
+[[dependencies.appleseed]]
+    modId="neoforge"
+    mandatory=true
+    versionRange="[21.1.186,)"
+    ordering="NONE"
+    side="BOTH"

@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:carrot",
+    "minecraft:golden_carrot",
+    "minecraft:potato",
+    "minecraft:baked_potato",
+    "minecraft:poisonous_potato",
+    "minecraft:beetroot",
+    "minecraft:beetroot_soup",
+    "minecraft:mushroom_stew",
+    "minecraft:suspicious_stew",
+    "minecraft:rabbit_stew",
+    "minecraft:sea_pickle",
+    "minecraft:dried_kelp"
+  ]
+}

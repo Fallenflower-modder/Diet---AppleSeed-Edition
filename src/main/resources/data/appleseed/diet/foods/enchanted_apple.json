@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:enchanted_golden_apple",
+    "nutritions":{
+        "fruits":0.2,
+        "sugars":0.05
+    }
+}

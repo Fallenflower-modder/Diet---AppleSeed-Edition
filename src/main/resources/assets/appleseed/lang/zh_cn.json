@@ -1,0 +1,17 @@
+{
+  "gui.appleseed.title": "膳食均衡",
+  "gui.appleseed.button": "膳食均衡",
+  "gui.appleseed.close": "完成",
+  "tooltip.appleseed.nutrition": "营养值：",
+  "tooltip.appleseed.effects": "当前效果：",
+  "tooltip.appleseed.effects.active": "✅ 膳食系统已激活",
+  "tooltip.appleseed.effects.inactive": "❌ 膳食系统未激活",
+  "diet.group.fruits": "水果",
+  "diet.group.vegetables": "蔬菜",
+  "diet.group.proteins": "蛋白质",
+  "diet.group.grains": "谷物",
+  "diet.group.sugars": "糖分",
+  "gamerule.keepNutritions": "保留营养值",
+  "appleseed.calculation.progress": "§e[苹果籽]§r 正在计算食物营养：%d/%d (%d 项成功)",
+  "appleseed.calculation.complete": "§a[苹果籽]§r 食物营养计算完成！"
+}

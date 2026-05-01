@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:glow_berries",
+    "nutritions":{
+        "fruits":0.015,
+        "sugars":0.002
+    }
+}

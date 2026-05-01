@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:red_mushroom",
+    "nutritions":{
+        "proteins":0.01,
+        "vegetables":0.01
+    }
+}
