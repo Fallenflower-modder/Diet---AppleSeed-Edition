@@ -1,5 +1,8 @@
 package net.appleseed.appleseed.common.capability;
 
+import net.appleseed.appleseed.api.type.IDietGroup;
+import net.appleseed.appleseed.common.config.DietConfig;
+import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -80,11 +83,10 @@ public class DietEffects {
         Map<Holder<MobEffect>, Integer> mergedEffects = new HashMap<>();
         Map<Holder<Attribute>, Double> mergedAttributes = new HashMap<>();
 
-        mergeGroupEffects(player, "grains", net.appleseed.appleseed.common.config.DietConfig.INSTANCE.grainsRanges.get(), mergedEffects, mergedAttributes);
-        mergeGroupEffects(player, "fruits", net.appleseed.appleseed.common.config.DietConfig.INSTANCE.fruitsRanges.get(), mergedEffects, mergedAttributes);
-        mergeGroupEffects(player, "vegetables", net.appleseed.appleseed.common.config.DietConfig.INSTANCE.vegetablesRanges.get(), mergedEffects, mergedAttributes);
-        mergeGroupEffects(player, "proteins", net.appleseed.appleseed.common.config.DietConfig.INSTANCE.proteinsRanges.get(), mergedEffects, mergedAttributes);
-        mergeGroupEffects(player, "sugars", net.appleseed.appleseed.common.config.DietConfig.INSTANCE.sugarsRanges.get(), mergedEffects, mergedAttributes);
+        for (IDietGroup group : DietGroups.getGroups(player.level())) {
+            List<? extends String> ranges = getRangesForGroup(group.getName());
+            mergeGroupEffects(player, group.getName(), ranges, mergedEffects, mergedAttributes);
+        }
 
         for (Map.Entry<Holder<MobEffect>, Integer> entry : mergedEffects.entrySet()) {
             Holder<MobEffect> effect = entry.getKey();
@@ -127,10 +129,23 @@ public class DietEffects {
         }
     }
 
+    private static List<? extends String> getRangesForGroup(String groupName) {
+        return switch (groupName) {
+            case "grains" -> DietConfig.INSTANCE.grainsRanges.get();
+            case "fruits" -> DietConfig.INSTANCE.fruitsRanges.get();
+            case "vegetables" -> DietConfig.INSTANCE.vegetablesRanges.get();
+            case "proteins" -> DietConfig.INSTANCE.proteinsRanges.get();
+            case "sugars" -> DietConfig.INSTANCE.sugarsRanges.get();
+            default -> java.util.Collections.emptyList();
+        };
+    }
+
     private static void mergeGroupEffects(Player player, String group, List<? extends String> configRanges,
                                            Map<Holder<MobEffect>, Integer> effects,
                                            Map<Holder<Attribute>, Double> attributes) {
         float value = DietData.getValue(player, group);
+        IDietGroup groupObj = DietGroups.getGroup(player.level(), group).orElse(null);
+        float decayMultiplier = groupObj != null ? (float) groupObj.getDecayMultiplier() : 1.0f;
         List<RangeEffects> ranges = parseRange(group, configRanges);
 
         for (RangeEffects range : ranges) {
@@ -139,7 +154,7 @@ public class DietEffects {
                     effects.merge(pe.effect(), pe.amplifier(), Integer::max);
                 }
                 for (ParsedAttribute pa : range.attributes()) {
-                    attributes.merge(pa.attribute(), pa.amount(), Double::sum);
+                    attributes.merge(pa.attribute(), pa.amount() * decayMultiplier, Double::sum);
                 }
             }
         }

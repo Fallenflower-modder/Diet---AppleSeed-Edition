@@ -42,6 +42,7 @@ public class AppleSeed {
     public static GameRules.Key<GameRules.BooleanValue> RULE_KEEPNUTRITIONS;
 
     private static final java.util.Map<Player, Integer> prevFoodLevels = new java.util.WeakHashMap<>();
+    private static final java.util.Map<java.util.UUID, java.util.Map<String, Float>> deathNutritionCache = new java.util.HashMap<>();
 
     public AppleSeed(IEventBus bus, ModContainer container) {
         ClientSetup.MENU_TYPES.register(bus);
@@ -52,6 +53,7 @@ public class AppleSeed {
         NeoForge.EVENT_BUS.addListener(this::onDatapackSync);
         NeoForge.EVENT_BUS.addListener(this::onItemUseFinish);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerDeath);
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(this::onPlayerHurt);
@@ -73,8 +75,9 @@ public class AppleSeed {
         Integer prevFood = prevFoodLevels.get(player);
         if (prevFood != null && currentFood < prevFood) {
             int lost = prevFood - currentFood;
-            float decay = lost * 0.005f;
+            float baseDecay = lost * 0.005f;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                float decay = baseDecay * (float) group.getDecayMultiplier();
                 DietData.addValue(player, group.getName(), -decay);
             }
             DietData.syncToClient(player);
@@ -91,8 +94,9 @@ public class AppleSeed {
             return;
         }
         if (event.getEntity() instanceof Player player) {
-            float decay = 0.001f;
+            float baseDecay = 0.001f;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                float decay = baseDecay * (float) group.getDecayMultiplier();
                 DietData.addValue(player, group.getName(), -decay);
             }
             DietData.syncToClient(player);
@@ -109,12 +113,34 @@ public class AppleSeed {
         if (player.level().isClientSide()) {
             return;
         }
+        deathNutritionCache.remove(player.getUUID());
         for (IDietGroup group : DietGroups.getGroups(player.level())) {
             if (DietData.getValue(player, group.getName()) == 0.0f) {
-                DietData.setValue(player, group.getName(), DietConfig.getInitialValue(group.getName()));
+                float initialValue = group.getDefaultValue();
+                if (initialValue == 0.0f) {
+                    initialValue = DietConfig.getInitialValue(group.getName());
+                }
+                DietData.setValue(player, group.getName(), initialValue);
             }
         }
         DietData.syncToClient(player);
+    }
+
+    private void onPlayerDeath(final LivingDeathEvent event) {
+        if (event.getEntity().level().isClientSide()) {
+            return;
+        }
+        if (event.getEntity() instanceof Player player) {
+            if (player.level().getGameRules().getBoolean(RULE_KEEPNUTRITIONS)) {
+                java.util.Map<String, Float> nutritionValues = new java.util.HashMap<>();
+                for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                    nutritionValues.put(group.getName(), DietData.getValue(player, group.getName()));
+                }
+                deathNutritionCache.put(player.getUUID(), nutritionValues);
+            } else {
+                deathNutritionCache.remove(player.getUUID());
+            }
+        }
     }
 
     private void onPlayerRespawn(final PlayerEvent.PlayerRespawnEvent event) {
@@ -122,9 +148,21 @@ public class AppleSeed {
         if (player.level().isClientSide()) {
             return;
         }
-        if (!player.level().getGameRules().getBoolean(RULE_KEEPNUTRITIONS)) {
+        if (player.level().getGameRules().getBoolean(RULE_KEEPNUTRITIONS)) {
+            java.util.Map<String, Float> savedNutrition = deathNutritionCache.get(player.getUUID());
+            if (savedNutrition != null) {
+                for (java.util.Map.Entry<String, Float> entry : savedNutrition.entrySet()) {
+                    DietData.setValue(player, entry.getKey(), entry.getValue());
+                }
+                deathNutritionCache.remove(player.getUUID());
+            }
+        } else {
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
-                DietData.setValue(player, group.getName(), DietConfig.getInitialValue(group.getName()));
+                float initialValue = group.getDefaultValue();
+                if (initialValue == 0.0f) {
+                    initialValue = DietConfig.getInitialValue(group.getName());
+                }
+                DietData.setValue(player, group.getName(), initialValue);
             }
         }
         DietData.syncToClient(player);

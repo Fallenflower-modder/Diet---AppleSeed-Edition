@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.type.IDietGroup;
+import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -305,11 +307,9 @@ public class FoodNutritionAutoCalculator {
                 }
             }
             if (nutritions.isEmpty() || nutritionsJson.size() == 0) {
-                nutritionsJson.addProperty("grains", 0.0f);
-                nutritionsJson.addProperty("fruits", 0.0f);
-                nutritionsJson.addProperty("vegetables", 0.0f);
-                nutritionsJson.addProperty("proteins", 0.0f);
-                nutritionsJson.addProperty("sugars", 0.0f);
+                for (IDietGroup group : DietGroups.SERVER.getGroups()) {
+                    nutritionsJson.addProperty(group.getName(), 0.0f);
+                }
             }
 
             json.add("nutritions", nutritionsJson);

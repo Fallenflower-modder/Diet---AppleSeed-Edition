@@ -1,10 +1,16 @@
 package net.appleseed.appleseed.common.capability;
 
+import net.appleseed.appleseed.api.type.IDietGroup;
+import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.network.SyncDietPacket;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class DietData {
 
@@ -32,20 +38,31 @@ public class DietData {
     }
 
     public static void addValue(Player player, String group, float value) {
+        IDietGroup groupObj = DietGroups.getGroup(player.level(), group).orElse(null);
+        float multiplier = groupObj != null ? (float) groupObj.getGainMultiplier() : 1.0f;
         float current = getValue(player, group);
-        setValue(player, group, current + value);
+        setValue(player, group, current + value * multiplier);
+    }
+
+    public static Map<String, Float> getAllValues(Player player) {
+        Map<String, Float> values = new HashMap<>();
+        CompoundTag tag = getDietTag(player);
+        Set<String> keys = tag.getAllKeys();
+        for (String key : keys) {
+            values.put(key, tag.getFloat(key));
+        }
+        return values;
     }
 
     public static void syncToClient(Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
-            SyncDietPacket packet = new SyncDietPacket(
-                    getValue(player, "grains"),
-                    getValue(player, "fruits"),
-                    getValue(player, "vegetables"),
-                    getValue(player, "proteins"),
-                    getValue(player, "sugars")
-            );
+            Map<String, Float> allValues = new HashMap<>();
+            for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                allValues.put(group.getName(), getValue(player, group.getName()));
+            }
+            SyncDietPacket packet = new SyncDietPacket(allValues);
             PacketDistributor.sendToPlayer(serverPlayer, packet);
         }
     }
 }
+

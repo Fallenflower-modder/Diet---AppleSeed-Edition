@@ -18,9 +18,11 @@ public class DietGroup implements IDietGroup {
     private final double decayMultiplier;
     private final boolean beneficial;
     private final TagKey<Item> tag;
+    private final String translationKey;
 
     DietGroup(String name, Item icon, DietColor color, float defaultValue, int order,
-              double gainMultiplier, double decayMultiplier, boolean beneficial, TagKey<Item> tag) {
+              double gainMultiplier, double decayMultiplier, boolean beneficial, TagKey<Item> tag,
+              String translationKey) {
         this.name = name;
         this.icon = icon;
         this.color = color;
@@ -30,6 +32,7 @@ public class DietGroup implements IDietGroup {
         this.decayMultiplier = decayMultiplier;
         this.beneficial = beneficial;
         this.tag = tag;
+        this.translationKey = translationKey;
     }
 
     @Override
@@ -78,6 +81,11 @@ public class DietGroup implements IDietGroup {
     }
 
     @Override
+    public String getTranslationKey() {
+        return translationKey;
+    }
+
+    @Override
     public boolean contains(ItemStack stack) {
         return tag != null && stack.is(tag);
     }
@@ -92,20 +100,22 @@ public class DietGroup implements IDietGroup {
         tag.putDouble("GainMultiplier", gainMultiplier);
         tag.putDouble("DecayMultiplier", decayMultiplier);
         tag.putBoolean("Beneficial", beneficial);
+        tag.putString("TranslationKey", translationKey);
         return tag;
     }
 
     public static DietGroup load(CompoundTag tag) {
         return new DietGroup(
                 tag.getString("Name"),
-                null,
+                net.minecraft.world.item.Items.APPLE,
                 DietColor.fromInt(tag.getInt("Color")),
                 tag.getFloat("DefaultValue"),
                 tag.getInt("Order"),
                 tag.getDouble("GainMultiplier"),
                 tag.getDouble("DecayMultiplier"),
                 tag.getBoolean("Beneficial"),
-                null
+                null,
+                tag.getString("TranslationKey")
         );
     }
 
@@ -120,9 +130,11 @@ public class DietGroup implements IDietGroup {
         private double decayMultiplier = 1.0;
         private boolean beneficial = true;
         private TagKey<Item> tag;
+        private String translationKey;
 
         public Builder(String name) {
             this.name = name;
+            this.translationKey = "diet.group." + name;
         }
 
         public Builder icon(Item icon) {
@@ -165,9 +177,14 @@ public class DietGroup implements IDietGroup {
             return this;
         }
 
+        public Builder translationKey(String translationKey) {
+            this.translationKey = translationKey;
+            return this;
+        }
+
         public DietGroup build() {
             return new DietGroup(name, icon, color, defaultValue, order,
-                    gainMultiplier, decayMultiplier, beneficial, tag);
+                    gainMultiplier, decayMultiplier, beneficial, tag, translationKey);
         }
     }
 }

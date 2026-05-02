@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -57,7 +58,9 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
                     JsonObject nutritionsJson = json.getAsJsonObject("nutritions");
                     for (String key : nutritionsJson.keySet()) {
                         float value = nutritionsJson.get(key).getAsFloat();
-                        nutritions.put(key, value);
+                        if (!DietGroups.isGroupDisabled(key)) {
+                            nutritions.put(key, value);
+                        }
                     }
                 }
                 this.foodNutrition.put(item, nutritions);
@@ -106,7 +109,9 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
                     JsonObject nutritionsJson = json.getAsJsonObject("nutritions");
                     for (String key : nutritionsJson.keySet()) {
                         float value = nutritionsJson.get(key).getAsFloat();
-                        nutritions.put(key, value);
+                        if (!DietGroups.isGroupDisabled(key)) {
+                            nutritions.put(key, value);
+                        }
                     }
                 }
                 this.foodNutrition.put(item, nutritions);
@@ -120,6 +125,9 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
     }
 
     public float getNutritionValue(Item item, String group) {
+        if (DietGroups.isGroupDisabled(group)) {
+            return 0.0f;
+        }
         Map<String, Float> nutritions = this.foodNutrition.get(item);
         if (nutritions != null) {
             return nutritions.getOrDefault(group, 0.0f);
@@ -128,7 +136,14 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
     }
 
     public Map<String, Float> getNutritions(Item item) {
-        return this.foodNutrition.getOrDefault(item, new HashMap<>());
+        Map<String, Float> result = new HashMap<>();
+        Map<String, Float> all = this.foodNutrition.getOrDefault(item, new HashMap<>());
+        for (Map.Entry<String, Float> entry : all.entrySet()) {
+            if (!DietGroups.isGroupDisabled(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
     }
 
     public boolean hasNutritionData(Item item) {
