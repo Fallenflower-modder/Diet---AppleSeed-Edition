@@ -26,6 +26,8 @@ public interface IDietGroup {
 
     TagKey<Item> getTag();
 
+    String getTranslationKey();
+
     boolean contains(ItemStack stack);
 
     CompoundTag save();
