@@ -1,9 +1,10 @@
 {
   "icon": "minecraft:carrot",
-  "color": "#189132",
-  "order": 4,
-  "default_value": 0.0,
+  "color": "#28a745",
+  "order": 2,
+  "default_value": 0.5,
   "gain_multiplier": 1.0,
   "decay_multiplier": 1.0,
-  "beneficial": true
+  "beneficial": true,
+  "translation_key": "diet.group.vegetables"
 }

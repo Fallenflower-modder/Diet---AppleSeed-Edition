@@ -1,9 +1,10 @@
 {
   "icon": "minecraft:cooked_beef",
-  "color": "#963c32",
-  "order": 2,
-  "default_value": 0.0,
+  "color": "#8b4513",
+  "order": 3,
+  "default_value": 0.5,
   "gain_multiplier": 1.0,
   "decay_multiplier": 1.0,
-  "beneficial": true
+  "beneficial": true,
+  "translation_key": "diet.group.proteins"
 }
