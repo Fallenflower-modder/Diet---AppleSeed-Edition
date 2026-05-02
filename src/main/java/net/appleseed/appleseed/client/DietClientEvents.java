@@ -23,12 +23,24 @@ import java.util.Map;
 @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
 public class DietClientEvents {
 
+    private static InventoryScreenButton dietButton;
+
     @SubscribeEvent
     public static void onGuiInit(ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof InventoryScreen screen) {
             int x = screen.getGuiLeft() + 128;
             int y = screen.getGuiTop() + 61;
-            event.addListener(new InventoryScreenButton(x, y));
+            dietButton = new InventoryScreenButton(x, y);
+            event.addListener(dietButton);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
+        if (event.getScreen() instanceof InventoryScreen screen && dietButton != null) {
+            int x = screen.getGuiLeft() + 128;
+            int y = screen.getGuiTop() + 61;
+            dietButton.setPosition(x, y);
         }
     }
 
@@ -71,7 +83,7 @@ public class DietClientEvents {
             if (value > 0) {
                 float percent = value * 100;
                 tooltip.add(Component.literal(String.format("  %s: +%.1f%%",
-                        Component.translatable("diet.group." + group.getName()).getString(), percent))
+                        Component.translatable(group.getTranslationKey()).getString(), percent))
                         .withStyle(s -> s.withColor(group.getColor().toInt())));
             }
         });

@@ -21,6 +21,11 @@ public class InventoryScreenButton extends AbstractButton {
         super(x, y, 20, 20, Component.translatable("gui.appleseed.button"));
     }
 
+    public void setPosition(int x, int y) {
+        this.setX(x);
+        this.setY(y);
+    }
+
     @Override
     public void onPress() {
         Player player = Minecraft.getInstance().player;

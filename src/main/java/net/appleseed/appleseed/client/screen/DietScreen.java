@@ -45,13 +45,18 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         this.sortedGroups.addAll(DietGroups.getGroups(this.menu.getPlayer().level()));
         this.sortedGroups.sort(Comparator.comparingInt(IDietGroup::getOrder));
 
+        this.imageHeight = 110 + this.sortedGroups.size() * 18;
+
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.infoIconX = this.leftPos + this.titleLabelX + this.font.width(this.title) + 8;
         this.infoIconY = this.topPos + 6;
 
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.appleseed.close"), button -> {
-            this.minecraft.player.closeContainer();
-        }).bounds(this.leftPos + (this.imageWidth - 60) / 2, this.topPos + this.imageHeight - 25, 60, 20).build());
+        if (this.sortedGroups.size() <= 6) {
+            int buttonY = this.topPos + 128;
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.appleseed.close"), button -> {
+                this.minecraft.player.closeContainer();
+            }).bounds(this.leftPos + (this.imageWidth - 60) / 2, buttonY, 60, 20).build());
+        }
     }
 
     @Override
@@ -72,20 +77,14 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         tooltip.add(Component.translatable("tooltip.appleseed.effects"));
 
         Player player = this.menu.getPlayer();
-        Map<String, List<? extends String>> allRanges = new HashMap<>();
-        allRanges.put("grains", DietConfig.INSTANCE.grainsRanges.get());
-        allRanges.put("fruits", DietConfig.INSTANCE.fruitsRanges.get());
-        allRanges.put("vegetables", DietConfig.INSTANCE.vegetablesRanges.get());
-        allRanges.put("proteins", DietConfig.INSTANCE.proteinsRanges.get());
-        allRanges.put("sugars", DietConfig.INSTANCE.sugarsRanges.get());
-
         Map<String, Integer> mergedEffects = new HashMap<>();
         Map<String, Double> mergedAttributes = new HashMap<>();
 
-        for (Map.Entry<String, List<? extends String>> entry : allRanges.entrySet()) {
-            String group = entry.getKey();
-            float value = DietData.getValue(player, group);
-            List<DietEffects.RangeEffects> ranges = DietEffects.parseRange(group, entry.getValue());
+        for (IDietGroup group : DietGroups.getGroups(player.level())) {
+            String groupName = group.getName();
+            float value = DietData.getValue(player, groupName);
+            List<? extends String> rangeStrs = getRangesForGroup(groupName);
+            List<DietEffects.RangeEffects> ranges = DietEffects.parseRange(groupName, rangeStrs);
 
             for (DietEffects.RangeEffects range : ranges) {
                 if (value >= range.min() && value <= range.max()) {
@@ -116,6 +115,17 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         }
 
         return tooltip;
+    }
+
+    private List<? extends String> getRangesForGroup(String groupName) {
+        return switch (groupName) {
+            case "grains" -> DietConfig.INSTANCE.grainsRanges.get();
+            case "fruits" -> DietConfig.INSTANCE.fruitsRanges.get();
+            case "vegetables" -> DietConfig.INSTANCE.vegetablesRanges.get();
+            case "proteins" -> DietConfig.INSTANCE.proteinsRanges.get();
+            case "sugars" -> DietConfig.INSTANCE.sugarsRanges.get();
+            default -> java.util.Collections.emptyList();
+        };
     }
 
     private String toRoman(int num) {
@@ -157,9 +167,13 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
             float b = (color & 255) / 255.0F;
             int rowY = y + i * 18;
 
-            guiGraphics.renderFakeItem(new net.minecraft.world.item.ItemStack(group.getIcon()), iconX, rowY - 5);
+            net.minecraft.world.item.Item iconItem = group.getIcon();
+            if (iconItem == null) {
+                iconItem = net.minecraft.world.item.Items.APPLE;
+            }
+            guiGraphics.renderFakeItem(new net.minecraft.world.item.ItemStack(iconItem), iconX, rowY - 5);
 
-            Component groupName = Component.translatable("diet.group." + group.getName());
+            Component groupName = Component.translatable(group.getTranslationKey());
             guiGraphics.drawString(this.font, groupName, nameX, rowY - 1, 0x404040, false);
 
             RenderSystem.setShaderColor(r, g, b, 1.0F);
