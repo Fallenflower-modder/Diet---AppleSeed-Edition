@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -27,7 +28,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
     public static final FoodNutritionManager INSTANCE = new FoodNutritionManager();
     public static final FoodNutritionManager CLIENT = new FoodNutritionManager();
 
-    private final Map<Item, Map<String, Float>> foodNutrition = new HashMap<>();
+    final Map<Item, Map<String, Float>> foodNutrition = new HashMap<>();
 
     private FoodNutritionManager() {
         super(GSON, "diet/foods");
@@ -58,7 +59,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
                     JsonObject nutritionsJson = json.getAsJsonObject("nutritions");
                     for (String key : nutritionsJson.keySet()) {
                         float value = nutritionsJson.get(key).getAsFloat();
-                        if (!DietGroups.isGroupDisabled(key)) {
+                        if (!DietGroups.isGroupDisabled(key, this == CLIENT)) {
                             nutritions.put(key, value);
                         }
                     }
@@ -109,7 +110,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
                     JsonObject nutritionsJson = json.getAsJsonObject("nutritions");
                     for (String key : nutritionsJson.keySet()) {
                         float value = nutritionsJson.get(key).getAsFloat();
-                        if (!DietGroups.isGroupDisabled(key)) {
+                        if (!DietGroups.isGroupDisabled(key, this == CLIENT)) {
                             nutritions.put(key, value);
                         }
                     }
@@ -125,7 +126,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
     }
 
     public float getNutritionValue(Item item, String group) {
-        if (DietGroups.isGroupDisabled(group)) {
+        if (DietGroups.isGroupDisabled(group, this == CLIENT)) {
             return 0.0f;
         }
         Map<String, Float> nutritions = this.foodNutrition.get(item);
@@ -139,7 +140,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
         Map<String, Float> result = new HashMap<>();
         Map<String, Float> all = this.foodNutrition.getOrDefault(item, new HashMap<>());
         for (Map.Entry<String, Float> entry : all.entrySet()) {
-            if (!DietGroups.isGroupDisabled(entry.getKey())) {
+            if (!DietGroups.isGroupDisabled(entry.getKey(), this == CLIENT)) {
                 result.put(entry.getKey(), entry.getValue());
             }
         }
@@ -148,5 +149,18 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
 
     public boolean hasNutritionData(Item item) {
         return this.foodNutrition.containsKey(item);
+    }
+
+    public Map<Item, Map<String, Float>> getAllFoodData() {
+        return this.foodNutrition;
+    }
+
+    public static Map<String, Float> getNutritionsForClient(Item item, boolean isClientSide) {
+        if (isClientSide && ServerDietConfig.isConnectedToDedicatedServer()) {
+            String foodId = BuiltInRegistries.ITEM.getKey(item).toString();
+            return ServerDietConfig.getServerFoodNutrition(foodId);
+        }
+        FoodNutritionManager instance = isClientSide ? CLIENT : INSTANCE;
+        return instance.getNutritions(item);
     }
 }

@@ -57,7 +57,7 @@ public class DietClientEvents {
             return;
         }
 
-        Map<String, Float> nutritions = FoodNutritionManager.CLIENT.getNutritions(stack.getItem());
+        Map<String, Float> nutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
         if (nutritions.isEmpty()) {
             return;
         }
@@ -87,12 +87,5 @@ public class DietClientEvents {
                         .withStyle(s -> s.withColor(group.getColor().toInt())));
             }
         });
-    }
-
-    @SubscribeEvent
-    public static void addReloadListener(AddReloadListenerEvent event) {
-        event.addListener(DietGroups.CLIENT);
-        event.addListener(DietSuites.CLIENT);
-        event.addListener(FoodNutritionManager.CLIENT);
     }
 }

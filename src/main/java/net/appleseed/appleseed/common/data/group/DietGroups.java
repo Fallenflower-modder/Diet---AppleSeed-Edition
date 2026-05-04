@@ -20,6 +20,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Item;
+import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 
@@ -33,21 +34,29 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     public static final DietGroups CLIENT = new DietGroups();
 
     private Map<String, IDietGroup> groups = new HashMap<>();
-    private static final Set<String> disabledGroups = new HashSet<>();
+    private final Set<String> disabledGroups = new HashSet<>();
 
     public DietGroups() {
         super(GSON, "diet/groups");
     }
 
-    public static boolean isGroupDisabled(String groupName) {
-        return disabledGroups.contains(groupName);
+    public static boolean isGroupDisabled(String groupName, boolean isClient) {
+        DietGroups instance = isClient ? CLIENT : SERVER;
+        return instance.disabledGroups.contains(groupName);
+    }
+
+    public static boolean isGroupDisabled(Level level, String groupName) {
+        return isGroupDisabled(groupName, level.isClientSide());
     }
 
     public static Set<IDietGroup> getGroups(Level level) {
+        if (level.isClientSide && ServerDietConfig.isConnectedToDedicatedServer()) {
+            return new LinkedHashSet<>(ServerDietConfig.getServerGroups());
+        }
         DietGroups instance = level.isClientSide ? CLIENT : SERVER;
         Set<IDietGroup> result = new HashSet<>();
         for (IDietGroup group : instance.groups.values()) {
-            if (!disabledGroups.contains(group.getName())) {
+            if (!instance.disabledGroups.contains(group.getName())) {
                 result.add(group);
             }
         }
@@ -55,17 +64,17 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     }
 
     public static Optional<IDietGroup> getGroup(Level level, String name) {
-        if (disabledGroups.contains(name)) {
+        DietGroups instance = level.isClientSide ? CLIENT : SERVER;
+        if (instance.disabledGroups.contains(name)) {
             return Optional.empty();
         }
-        DietGroups instance = level.isClientSide ? CLIENT : SERVER;
         return Optional.ofNullable(instance.groups.get(name));
     }
 
     public Set<IDietGroup> getGroups() {
         Set<IDietGroup> result = new HashSet<>();
         for (IDietGroup group : this.groups.values()) {
-            if (!disabledGroups.contains(group.getName())) {
+            if (!this.disabledGroups.contains(group.getName())) {
                 result.add(group);
             }
         }
@@ -73,7 +82,7 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     }
 
     public Optional<IDietGroup> getGroup(String name) {
-        if (disabledGroups.contains(name)) {
+        if (this.disabledGroups.contains(name)) {
             return Optional.empty();
         }
         return Optional.ofNullable(this.groups.get(name));
@@ -82,7 +91,7 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         for (Map.Entry<String, IDietGroup> entry : this.groups.entrySet()) {
-            if (!disabledGroups.contains(entry.getKey())) {
+            if (!this.disabledGroups.contains(entry.getKey())) {
                 tag.put(entry.getKey(), entry.getValue().save());
             }
         }
@@ -92,7 +101,7 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     public void load(CompoundTag tag) {
         Map<String, IDietGroup> loaded = new HashMap<>();
         for (String key : tag.getAllKeys()) {
-            if (!disabledGroups.contains(key)) {
+            if (!this.disabledGroups.contains(key)) {
                 loaded.put(key, DietGroup.load((CompoundTag) Objects.requireNonNull(tag.get(key))));
             }
         }
@@ -103,7 +112,7 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
     protected void apply(@Nonnull Map<ResourceLocation, JsonElement> object,
                          @Nonnull ResourceManager resourceManager,
                          @Nonnull ProfilerFiller profilerFiller) {
-        disabledGroups.clear();
+        this.disabledGroups.clear();
 
         processDisabledGroups(object);
 
@@ -162,12 +171,12 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
 
         Map<String, IDietGroup> finalGroups = new HashMap<>();
         for (Map.Entry<String, java.util.AbstractMap.SimpleEntry<Integer, DietGroup.Builder>> entry : groupMap.entrySet()) {
-            if (!disabledGroups.contains(entry.getKey())) {
+            if (!this.disabledGroups.contains(entry.getKey())) {
                 finalGroups.put(entry.getKey(), entry.getValue().getValue().build());
             }
         }
         groups = ImmutableMap.copyOf(finalGroups);
-        AppleSeedConstants.LOG.info("Loaded {} diet groups ({} disabled)", groups.size(), disabledGroups.size());
+        AppleSeedConstants.LOG.info("Loaded {} diet groups ({} disabled)", groups.size(), this.disabledGroups.size());
     }
 
     private int getFilePriority(ResourceLocation location) {
@@ -235,14 +244,14 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
         }
 
         if (!samePriorityDisabled.isEmpty()) {
-            disabledGroups.clear();
+            this.disabledGroups.clear();
             for (Set<String> groups : samePriorityDisabled.values()) {
-                disabledGroups.addAll(groups);
+                this.disabledGroups.addAll(groups);
             }
-            AppleSeedConstants.LOG.info("Processed disabled_groups, total {} disabled groups", disabledGroups.size());
+            AppleSeedConstants.LOG.info("Processed disabled_groups, total {} disabled groups", this.disabledGroups.size());
         }
 
-        for (String groupId : new HashSet<>(disabledGroups)) {
+        for (String groupId : new HashSet<>(this.disabledGroups)) {
             boolean exists = false;
             for (Map.Entry<ResourceLocation, JsonElement> entry : object.entrySet()) {
                 if (entry.getKey().getPath().equals(groupId)) {
@@ -252,7 +261,7 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
             }
             if (!exists) {
                 AppleSeedConstants.LOG.warn("Disabled group '{}' does not exist, skipping", groupId);
-                disabledGroups.remove(groupId);
+                this.disabledGroups.remove(groupId);
             }
         }
     }
@@ -276,6 +285,14 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
 
         if (json.has("translation_key")) {
             builder.translationKey(GsonHelper.getAsString(json, "translation_key"));
+        }
+
+        if (json.has("effects") && json.get("effects").isJsonArray()) {
+            List<String> effects = new ArrayList<>();
+            for (JsonElement element : GsonHelper.getAsJsonArray(json, "effects")) {
+                effects.add(element.getAsString());
+            }
+            builder.effects(effects);
         }
 
         TagKey<Item> tag = TagKey.create(BuiltInRegistries.ITEM.key(),

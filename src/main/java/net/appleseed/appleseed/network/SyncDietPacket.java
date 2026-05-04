@@ -2,14 +2,16 @@ package net.appleseed.appleseed.network;
 
 import io.netty.buffer.ByteBuf;
 import net.appleseed.appleseed.AppleSeed;
-import net.appleseed.appleseed.common.capability.DietData;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,14 +33,35 @@ public record SyncDietPacket(Map<String, Float> values) implements CustomPacketP
         return TYPE;
     }
 
-    public static void handle(final SyncDietPacket packet, final IPayloadContext context) {
-        context.enqueueWork(() -> {
-            var player = Minecraft.getInstance().player;
-            if (player != null) {
-                for (Map.Entry<String, Float> entry : packet.values().entrySet()) {
-                    DietData.setValue(player, entry.getKey(), entry.getValue());
+    private static volatile MethodHandle handlePacket;
+
+    private static MethodHandle getHandler() {
+        if (handlePacket == null && FMLEnvironment.dist.isClient()) {
+            synchronized (SyncDietPacket.class) {
+                if (handlePacket == null) {
+                    try {
+                        Class<?> clazz = Class.forName("net.appleseed.appleseed.network.ClientPacketHandler");
+                        handlePacket = MethodHandles.lookup().findStatic(clazz, "handlePacket",
+                                MethodType.methodType(void.class, SyncDietPacket.class, IPayloadContext.class));
+                    } catch (Throwable e) {
+                        handlePacket = null;
+                    }
                 }
             }
-        });
+        }
+        return handlePacket;
+    }
+
+    public static void handle(final SyncDietPacket packet, final IPayloadContext context) {
+        if (FMLEnvironment.dist.isClient()) {
+            MethodHandle handler = getHandler();
+            if (handler != null) {
+                try {
+                    handler.invokeExact(packet, context);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

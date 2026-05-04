@@ -28,7 +28,6 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
     public static final ResourceLocation PROGRESS_FULL =
             ResourceLocation.fromNamespaceAndPath(AppleSeed.MOD_ID, "textures/gui/progress_full.png");
 
-    private final List<IDietGroup> sortedGroups = new ArrayList<>();
     private int infoIconX;
     private int infoIconY;
 
@@ -38,20 +37,25 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         this.imageHeight = 166;
     }
 
+    private List<IDietGroup> getSortedGroups() {
+        List<IDietGroup> groups = new ArrayList<>(DietGroups.getGroups(this.menu.getPlayer().level()));
+        groups.sort(Comparator.comparingInt(IDietGroup::getOrder));
+        return groups;
+    }
+
     @Override
     protected void init() {
         super.init();
-        this.sortedGroups.clear();
-        this.sortedGroups.addAll(DietGroups.getGroups(this.menu.getPlayer().level()));
-        this.sortedGroups.sort(Comparator.comparingInt(IDietGroup::getOrder));
+        List<IDietGroup> sortedGroups = getSortedGroups();
 
-        this.imageHeight = 110 + this.sortedGroups.size() * 18;
+        this.imageHeight = 110 + sortedGroups.size() * 18;
 
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.infoIconX = this.leftPos + this.titleLabelX + this.font.width(this.title) + 8;
         this.infoIconY = this.topPos + 6;
 
-        if (this.sortedGroups.size() <= 6) {
+        this.clearWidgets();
+        if (sortedGroups.size() <= 6) {
             int buttonY = this.topPos + 128;
             this.addRenderableWidget(Button.builder(Component.translatable("gui.appleseed.close"), button -> {
                 this.minecraft.player.closeContainer();
@@ -61,6 +65,12 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        List<IDietGroup> sortedGroups = getSortedGroups();
+        int expectedHeight = 110 + sortedGroups.size() * 18;
+        if (this.imageHeight != expectedHeight) {
+            this.init();
+        }
+
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -80,7 +90,7 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         Map<String, Integer> mergedEffects = new HashMap<>();
         Map<String, Double> mergedAttributes = new HashMap<>();
 
-        for (IDietGroup group : DietGroups.getGroups(player.level())) {
+        for (IDietGroup group : getSortedGroups()) {
             String groupName = group.getName();
             float value = DietData.getValue(player, groupName);
             List<? extends String> rangeStrs = getRangesForGroup(groupName);
@@ -110,7 +120,12 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
             }
             for (Map.Entry<String, Double> entry : mergedAttributes.entrySet()) {
                 Component attrName = Component.translatable(entry.getKey());
-                tooltip.add(Component.literal(String.format("%+.0f ", entry.getValue()) + attrName.getString()));
+                String attrKey = entry.getKey();
+                if (isSpeedAttribute(attrKey)) {
+                    tooltip.add(Component.literal(String.format("%+.2f ", entry.getValue()) + attrName.getString()));
+                } else {
+                    tooltip.add(Component.literal(String.format("%+.0f ", entry.getValue()) + attrName.getString()));
+                }
             }
         }
 
@@ -118,14 +133,18 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
     }
 
     private List<? extends String> getRangesForGroup(String groupName) {
-        return switch (groupName) {
-            case "grains" -> DietConfig.INSTANCE.grainsRanges.get();
-            case "fruits" -> DietConfig.INSTANCE.fruitsRanges.get();
-            case "vegetables" -> DietConfig.INSTANCE.vegetablesRanges.get();
-            case "proteins" -> DietConfig.INSTANCE.proteinsRanges.get();
-            case "sugars" -> DietConfig.INSTANCE.sugarsRanges.get();
-            default -> java.util.Collections.emptyList();
-        };
+        if (DietConfig.hasEffectsOverride(groupName)) {
+            return DietConfig.getEffectsOverride(groupName);
+        }
+        IDietGroup group = DietGroups.getGroup(this.menu.getPlayer().level(), groupName).orElse(null);
+        if (group instanceof net.appleseed.appleseed.common.data.group.DietGroup dietGroup) {
+            return dietGroup.getEffects();
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    private boolean isSpeedAttribute(String attrKey) {
+        return attrKey.contains("movement_speed") || attrKey.contains("attack_speed");
     }
 
     private String toRoman(int num) {
@@ -151,14 +170,15 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         guiGraphics.blit(DIET_ICONS, infoIconX, infoIconY, 160, 0, 16, 16, 16, 16);
 
         Player player = this.menu.getPlayer();
+        List<IDietGroup> sortedGroups = getSortedGroups();
 
         int iconX = this.leftPos + 18;
         int nameX = this.leftPos + 42;
         int barX = this.leftPos + 82;
         int y = this.topPos + 28;
 
-        for (int i = 0; i < this.sortedGroups.size(); i++) {
-            IDietGroup group = this.sortedGroups.get(i);
+        for (int i = 0; i < sortedGroups.size(); i++) {
+            IDietGroup group = sortedGroups.get(i);
             float value = DietData.getValue(player, group.getName());
             int barWidth = (int) (value * 122);
             int color = group.getColor().toInt();
@@ -179,20 +199,19 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
             RenderSystem.setShaderColor(r, g, b, 1.0F);
             RenderSystem.setShaderTexture(0, PROGRESS_EMPTY);
             guiGraphics.blit(PROGRESS_EMPTY, barX, rowY, 0, 0, 122, 5, 122, 5);
-
-            RenderSystem.setShaderTexture(0, PROGRESS_FULL);
-            guiGraphics.blit(PROGRESS_FULL, barX, rowY, 0, 0, barWidth, 5, 122, 5);
+            if (barWidth > 0) {
+                RenderSystem.setShaderTexture(0, PROGRESS_FULL);
+                guiGraphics.blit(PROGRESS_FULL, barX, rowY, 0, 0, barWidth, 5, 122, 5);
+            }
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-            int percent = Math.round(value * 100);
-            guiGraphics.drawString(this.font, percent + "%", barX + 128, rowY - 1, color, true);
+            String percentText = String.format("%.0f%%", value * 100);
+            guiGraphics.drawString(this.font, percentText, barX + 125, rowY - 1, 0x404040, false);
         }
-
-        RenderSystem.disableBlend();
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x404040, false);
+        guiGraphics.drawString(this.font, this.title, this.titleLabelX, 8, 4210752, false);
     }
 }

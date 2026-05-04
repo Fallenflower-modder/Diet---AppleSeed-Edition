@@ -2,6 +2,7 @@ package net.appleseed.appleseed.common.capability;
 
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.common.config.DietConfig;
+import net.appleseed.appleseed.common.data.group.DietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -84,7 +85,7 @@ public class DietEffects {
         Map<Holder<Attribute>, Double> mergedAttributes = new HashMap<>();
 
         for (IDietGroup group : DietGroups.getGroups(player.level())) {
-            List<? extends String> ranges = getRangesForGroup(group.getName());
+            List<? extends String> ranges = getRangesForGroup(group.getName(), group);
             mergeGroupEffects(player, group.getName(), ranges, mergedEffects, mergedAttributes);
         }
 
@@ -129,15 +130,14 @@ public class DietEffects {
         }
     }
 
-    private static List<? extends String> getRangesForGroup(String groupName) {
-        return switch (groupName) {
-            case "grains" -> DietConfig.INSTANCE.grainsRanges.get();
-            case "fruits" -> DietConfig.INSTANCE.fruitsRanges.get();
-            case "vegetables" -> DietConfig.INSTANCE.vegetablesRanges.get();
-            case "proteins" -> DietConfig.INSTANCE.proteinsRanges.get();
-            case "sugars" -> DietConfig.INSTANCE.sugarsRanges.get();
-            default -> java.util.Collections.emptyList();
-        };
+    private static List<? extends String> getRangesForGroup(String groupName, IDietGroup group) {
+        if (DietConfig.hasEffectsOverride(groupName)) {
+            return DietConfig.getEffectsOverride(groupName);
+        }
+        if (group instanceof DietGroup dietGroup) {
+            return dietGroup.getEffects();
+        }
+        return Collections.emptyList();
     }
 
     private static void mergeGroupEffects(Player player, String group, List<? extends String> configRanges,
@@ -158,5 +158,9 @@ public class DietEffects {
                 }
             }
         }
+    }
+
+    public static void clearCache() {
+        CACHED_EFFECTS.clear();
     }
 }
