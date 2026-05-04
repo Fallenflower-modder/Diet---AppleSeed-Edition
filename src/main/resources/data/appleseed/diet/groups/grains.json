@@ -6,5 +6,11 @@
   "gain_multiplier": 1.0,
   "decay_multiplier": 1.0,
   "beneficial": true,
-  "translation_key": "diet.group.grains"
+  "translation_key": "diet.group.grains",
+  "effects": [
+    "0-25:effect(minecraft:slowness,0)",
+    "61-70:attribute(minecraft:generic.max_health,4.0)",
+    "71-80:attribute(minecraft:generic.max_health,6.0),effect(minecraft:regeneration,0)",
+    "81-100:attribute(minecraft:generic.max_health,6.0),attribute(minecraft:generic.attack_damage,1.0),effect(minecraft:regeneration,0)"
+  ]
 }

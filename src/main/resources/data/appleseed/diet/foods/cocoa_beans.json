@@ -1,0 +1,7 @@
+{
+    "source_item":"minecraft:cocoa_beans",
+    "nutritions":{
+        "fruits":0.01,
+        "grains":0.005
+    }
+}

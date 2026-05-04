@@ -1,10 +1,16 @@
 {
   "icon": "minecraft:sugar",
-  "color": "#ffffff",
+  "color": "#e8e8e8",
   "order": 4,
   "default_value": 0.5,
   "gain_multiplier": 1.0,
   "decay_multiplier": 1.0,
   "beneficial": true,
-  "translation_key": "diet.group.sugars"
+  "translation_key": "diet.group.sugars",
+  "effects": [
+    "0-25:effect(minecraft:slowness,0)",
+    "61-70:attribute(minecraft:generic.max_health,1.0),attribute(minecraft:generic.movement_speed,0.02)",
+    "71-80:attribute(minecraft:generic.max_health,2.0),attribute(minecraft:generic.movement_speed,0.04)",
+    "81-100:attribute(minecraft:generic.max_health,3.0),attribute(minecraft:generic.movement_speed,0.06),effect(minecraft:speed,0)"
+  ]
 }
