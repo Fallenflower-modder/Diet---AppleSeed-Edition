@@ -6,8 +6,8 @@
 
 [![](https://img.shields.io/badge/Mod%20Loader-Neoforge-%2347B04B?style=flat-square)](https://neoforged.net/)
 [![](https://img.shields.io/badge/Minecraft-1.21.1-%23737373?style=flat-square)](https://minecraft.net/)
-[![](https://img.shields.io/badge/Version-1.0.0-%232563EB?style=flat-square)]()
-[![](https://img.shields.io/badge/License-MIT-green?style=flat-square)]()
+[![](https://img.shields.io/badge/Version-1.2.0-%232563EB?style=flat-square)]()
+[![](https://img.shields.io/badge/License-LGPLv3-green?style=flat-square)]()
 
 ---
 
@@ -320,7 +320,7 @@
 
 ### 📜 许可
 
-本项目使用 **MIT** 许可。
+本项目使用 **LGPLv3** 许可。
 
 ---
 
