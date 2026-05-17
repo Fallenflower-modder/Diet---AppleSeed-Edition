@@ -11,6 +11,7 @@ import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
+import net.appleseed.appleseed.compat.SandwichCompat;
 import net.appleseed.appleseed.network.SyncDietConfigPacket;
 import net.appleseed.appleseed.network.SyncDietPacket;
 import net.minecraft.world.damagesource.DamageSource;
@@ -269,10 +270,19 @@ public class AppleSeed {
         if (entity instanceof Player player) {
             ItemStack stack = event.getItem();
             if (stack.getFoodProperties(player) != null) {
-                for (IDietGroup group : DietGroups.getGroups(player.level())) {
-                    float gain = FoodNutritionManager.INSTANCE.getNutritionValue(stack.getItem(), group.getName());
-                    if (gain > 0) {
-                        DietData.addValue(player, group.getName(), gain);
+                if (SandwichCompat.isSandwich(stack)) {
+                    Map<String, Float> gains = SandwichCompat.calculateNutrition(stack, player.level());
+                    for (Map.Entry<String, Float> entry : gains.entrySet()) {
+                        if (entry.getValue() > 0) {
+                            DietData.addValue(player, entry.getKey(), entry.getValue());
+                        }
+                    }
+                } else {
+                    for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                        float gain = FoodNutritionManager.INSTANCE.getNutritionValue(stack.getItem(), group.getName());
+                        if (gain > 0) {
+                            DietData.addValue(player, group.getName(), gain);
+                        }
                     }
                 }
                 DietData.syncToClient(player);

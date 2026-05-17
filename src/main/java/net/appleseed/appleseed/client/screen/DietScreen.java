@@ -206,7 +206,7 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
             String percentText = String.format("%.0f%%", value * 100);
-            guiGraphics.drawString(this.font, percentText, barX + 125, rowY - 1, 0x404040, false);
+            guiGraphics.drawString(this.font, percentText, barX + 125, rowY - 1, color, false);
         }
     }
 

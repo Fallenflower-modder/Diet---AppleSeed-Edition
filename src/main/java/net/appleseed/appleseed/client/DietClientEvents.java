@@ -5,6 +5,7 @@ import net.appleseed.appleseed.client.screen.InventoryScreenButton;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
+import net.appleseed.appleseed.compat.SandwichCompat;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -57,7 +58,12 @@ public class DietClientEvents {
             return;
         }
 
-        Map<String, Float> nutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
+        Map<String, Float> nutritions;
+        if (SandwichCompat.isSandwich(stack)) {
+            nutritions = SandwichCompat.calculateNutrition(stack, player.level());
+        } else {
+            nutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
+        }
         if (nutritions.isEmpty()) {
             return;
         }
