@@ -187,7 +187,17 @@ public class FoodNutritionAutoCalculator {
         alreadyProcessed.add(item);
 
         if (FoodNutritionManager.INSTANCE.hasNutritionData(item)) {
-            return FoodNutritionManager.INSTANCE.getNutritions(item);
+            Map<String, Float> stored = FoodNutritionManager.INSTANCE.getNutritions(item);
+            Map<String, Float> filtered = new HashMap<>();
+            for (Map.Entry<String, Float> e : stored.entrySet()) {
+                if (!isNegativeGroup(e.getKey())) {
+                    filtered.put(e.getKey(), e.getValue());
+                }
+            }
+            if (!filtered.isEmpty()) {
+                return filtered;
+            }
+            // If only negative nutrients stored, fall through to recipe analysis
         }
 
         if (calculatedNutrition.containsKey(item)) {
@@ -242,10 +252,17 @@ public class FoodNutritionAutoCalculator {
 
                     if (FoodNutritionManager.INSTANCE.hasNutritionData(bestItem)) {
                         Map<String, Float> ingredientNutrition = FoodNutritionManager.INSTANCE.getNutritions(bestItem);
+                        boolean contributed = false;
                         for (Map.Entry<String, Float> e : ingredientNutrition.entrySet()) {
-                            sum.merge(e.getKey(), e.getValue(), Float::sum);
+                            if (!isNegativeGroup(e.getKey())) {
+                                sum.merge(e.getKey(), e.getValue(), Float::sum);
+                                contributed = true;
+                            }
                         }
-                        continue;
+                        if (contributed) {
+                            continue;
+                        }
+                        // Fall through to recipe analysis for non-negative nutrients
                     }
 
                     FoodProperties food = bestItem.getFoodProperties(new ItemStack(bestItem), null);
@@ -255,7 +272,9 @@ public class FoodNutritionAutoCalculator {
 
                     Map<String, Float> ingredientNutrition = calculateNutrition(bestItem, allRecipes, visitStack, alreadyProcessed, server);
                     for (Map.Entry<String, Float> e : ingredientNutrition.entrySet()) {
-                        sum.merge(e.getKey(), e.getValue(), Float::sum);
+                        if (!isNegativeGroup(e.getKey())) {
+                            sum.merge(e.getKey(), e.getValue(), Float::sum);
+                        }
                     }
                 }
 
@@ -273,6 +292,13 @@ public class FoodNutritionAutoCalculator {
         }
 
         return new HashMap<>();
+    }
+
+    private static boolean isNegativeGroup(String groupName) {
+        boolean dataFileValue = DietGroups.SERVER.getGroup(groupName)
+                .map(IDietGroup::isNegative)
+                .orElse(false);
+        return net.appleseed.appleseed.common.config.DietConfig.isGroupNegative(groupName, dataFileValue);
     }
 
     private static boolean isValidRecipeType(Recipe<?> recipe) {

@@ -144,8 +144,6 @@ public class DietEffects {
                                            Map<Holder<MobEffect>, Integer> effects,
                                            Map<Holder<Attribute>, Double> attributes) {
         float value = DietData.getValue(player, group);
-        IDietGroup groupObj = DietGroups.getGroup(player.level(), group).orElse(null);
-        float decayMultiplier = groupObj != null ? (float) groupObj.getDecayMultiplier() : 1.0f;
         List<RangeEffects> ranges = parseRange(group, configRanges);
 
         for (RangeEffects range : ranges) {
@@ -154,7 +152,7 @@ public class DietEffects {
                     effects.merge(pe.effect(), pe.amplifier(), Integer::max);
                 }
                 for (ParsedAttribute pa : range.attributes()) {
-                    attributes.merge(pa.attribute(), pa.amount() * decayMultiplier, Double::sum);
+                    attributes.merge(pa.attribute(), pa.amount(), Double::sum);
                 }
             }
         }

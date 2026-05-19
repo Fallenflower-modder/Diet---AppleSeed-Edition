@@ -111,7 +111,7 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         }
 
         if (mergedEffects.isEmpty() && mergedAttributes.isEmpty()) {
-            tooltip.add(Component.literal("暂无激活效果"));
+            tooltip.add(Component.translatable("tooltip.appleseed.noeffect"));
         } else {
             for (Map.Entry<String, Integer> entry : mergedEffects.entrySet()) {
                 Component effectName = Component.translatable(entry.getKey());

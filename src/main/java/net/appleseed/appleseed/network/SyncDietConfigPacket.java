@@ -37,6 +37,9 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
                     ByteBufCodecs.DOUBLE.decode(buf),
                     ByteBufCodecs.DOUBLE.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.STRING_UTF8.decode(buf)
             );
         }
@@ -51,6 +54,9 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
             ByteBufCodecs.DOUBLE.encode(buf, data.gainMultiplier());
             ByteBufCodecs.DOUBLE.encode(buf, data.decayMultiplier());
             ByteBufCodecs.BOOL.encode(buf, data.beneficial());
+            ByteBufCodecs.BOOL.encode(buf, data.isNegative());
+            ByteBufCodecs.BOOL.encode(buf, data.ignoreAttack());
+            ByteBufCodecs.BOOL.encode(buf, data.ignoreHunger());
             ByteBufCodecs.STRING_UTF8.encode(buf, data.translationKey());
         }
     };
@@ -134,6 +140,7 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
 
     public record GroupData(String name, String iconId, int color, float defaultValue, int order,
                             double gainMultiplier, double decayMultiplier, boolean beneficial,
+                            boolean isNegative, boolean ignoreAttack, boolean ignoreHunger,
                             String translationKey) {
         public Map<String, Object> toMap() {
             Map<String, Object> data = new HashMap<>();
@@ -145,6 +152,9 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
             data.put("gainMultiplier", gainMultiplier);
             data.put("decayMultiplier", decayMultiplier);
             data.put("beneficial", beneficial);
+            data.put("isNegative", isNegative);
+            data.put("ignoreAttack", ignoreAttack);
+            data.put("ignoreHunger", ignoreHunger);
             data.put("translationKey", translationKey);
             return data;
         }

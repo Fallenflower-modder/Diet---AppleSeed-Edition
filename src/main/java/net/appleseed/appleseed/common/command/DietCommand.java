@@ -53,7 +53,21 @@ public class DietCommand {
                             .then(Commands.argument("nutrition", StringArgumentType.word())
                                 .suggests(DietCommand::suggestNutritionIds)
                                 .then(Commands.argument("value", DoubleArgumentType.doubleArg(0.0, 1.0))
-                                    .executes(DietCommand::setNutrition))))))
+                                    .executes(DietCommand::setNutrition)))))
+                    .then(Commands.literal("add")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("nutrition", StringArgumentType.word())
+                                .suggests(DietCommand::suggestNutritionIds)
+                                .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0, 1.0))
+                                    .executes(DietCommand::addNutrition)))))
+                    .then(Commands.literal("remove")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("nutrition", StringArgumentType.word())
+                                .suggests(DietCommand::suggestNutritionIds)
+                                .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0, 1.0))
+                                    .executes(DietCommand::removeNutrition))))))
                 .then(Commands.literal("config")
                     .then(Commands.literal("set")
                         .then(Commands.literal("ignoreHunger")
@@ -78,7 +92,7 @@ public class DietCommand {
             ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
             CommandSourceStack source = ctx.getSource();
 
-            MutableComponent header = Component.translatable("command.appleseed.query.header", target.getName().getString());
+            MutableComponent header = Component.translatable("command.appleseed.query.header", target.getName());
             source.sendSuccess(() -> header, false);
 
             boolean hasAny = false;
@@ -87,11 +101,9 @@ public class DietCommand {
                 int color = group.getColor().toInt();
                 hasAny = true;
 
-                MutableComponent line = Component.literal(
-                    String.format("  %s: %.1f%%",
-                        Component.translatable(group.getTranslationKey()).getString(),
-                        value * 100)
-                ).withStyle(style -> style.withColor(color));
+                MutableComponent line = Component.translatable(group.getTranslationKey())
+                        .append(Component.literal(String.format(": %.1f%%", value * 100)))
+                        .withStyle(style -> style.withColor(color));
 
                 source.sendSuccess(() -> line, false);
             }
@@ -120,12 +132,81 @@ public class DietCommand {
                 return 0;
             }
 
+            IDietGroup group = groupOpt.get();
             DietData.setValue(target, nutritionId, value);
             DietData.syncToClient(target);
 
             ctx.getSource().sendSuccess(() ->
                 Component.translatable("command.appleseed.set.success",
-                    target.getName().getString(), nutritionId, String.format("%.1f%%", value * 100)), true);
+                    target.getName(),
+                    Component.translatable(group.getTranslationKey()),
+                    Component.literal(String.format("%.1f%%", value * 100))), true);
+
+            return 1;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int addNutrition(CommandContext<CommandSourceStack> ctx) {
+        try {
+            ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+            String nutritionId = StringArgumentType.getString(ctx, "nutrition");
+            float amount = (float) DoubleArgumentType.getDouble(ctx, "amount");
+
+            var groupOpt = DietGroups.getGroup(target.level(), nutritionId);
+            if (groupOpt.isEmpty()) {
+                ctx.getSource().sendFailure(
+                    Component.translatable("command.appleseed.set.invalid_group", nutritionId));
+                return 0;
+            }
+
+            IDietGroup group = groupOpt.get();
+            float currentValue = DietData.getValue(target, nutritionId);
+            float newValue = Math.min(currentValue + amount, 1.0f);
+            DietData.setValue(target, nutritionId, newValue);
+            DietData.syncToClient(target);
+
+            ctx.getSource().sendSuccess(() ->
+                Component.translatable("command.appleseed.add.success",
+                    Component.literal(String.format("%.1f%%", amount * 100)),
+                    target.getName(),
+                    Component.translatable(group.getTranslationKey()),
+                    Component.literal(String.format("%.1f%%", newValue * 100))), true);
+
+            return 1;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int removeNutrition(CommandContext<CommandSourceStack> ctx) {
+        try {
+            ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+            String nutritionId = StringArgumentType.getString(ctx, "nutrition");
+            float amount = (float) DoubleArgumentType.getDouble(ctx, "amount");
+
+            var groupOpt = DietGroups.getGroup(target.level(), nutritionId);
+            if (groupOpt.isEmpty()) {
+                ctx.getSource().sendFailure(
+                    Component.translatable("command.appleseed.set.invalid_group", nutritionId));
+                return 0;
+            }
+
+            IDietGroup group = groupOpt.get();
+            float currentValue = DietData.getValue(target, nutritionId);
+            float newValue = Math.max(currentValue - amount, 0.0f);
+            DietData.setValue(target, nutritionId, newValue);
+            DietData.syncToClient(target);
+
+            ctx.getSource().sendSuccess(() ->
+                Component.translatable("command.appleseed.remove.success",
+                    Component.literal(String.format("%.1f%%", amount * 100)),
+                    target.getName(),
+                    Component.translatable(group.getTranslationKey()),
+                    Component.literal(String.format("%.1f%%", newValue * 100))), true);
 
             return 1;
         } catch (Exception e) {
@@ -213,7 +294,9 @@ public class DietCommand {
                                 dietGroup.getName(), iconId, dietGroup.getColor().toInt(),
                                 dietGroup.getDefaultValue(), dietGroup.getOrder(),
                                 dietGroup.getGainMultiplier(), dietGroup.getDecayMultiplier(),
-                                dietGroup.isBeneficial(), dietGroup.getTranslationKey()));
+                                dietGroup.isBeneficial(), dietGroup.isNegative(),
+                                dietGroup.ignoreAttack(), dietGroup.ignoreHunger(),
+                                dietGroup.getTranslationKey()));
                         }
                     }
                     java.util.Map<String, java.util.Map<String, Float>> foodData = new java.util.HashMap<>();

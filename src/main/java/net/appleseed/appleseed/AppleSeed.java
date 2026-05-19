@@ -84,6 +84,9 @@ public class AppleSeed {
             int lost = prevFood - currentFood;
             float baseDecay = lost * 0.005f;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                if (DietConfig.isGroupIgnoreHunger(group.getName(), group.ignoreHunger())) {
+                    continue;
+                }
                 float decay = baseDecay * (float) group.getDecayMultiplier();
                 DietData.addValue(player, group.getName(), -decay);
             }
@@ -103,6 +106,9 @@ public class AppleSeed {
         if (event.getEntity() instanceof Player player) {
             float baseDecay = 0.001f;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                if (DietConfig.isGroupIgnoreAttack(group.getName(), group.ignoreAttack())) {
+                    continue;
+                }
                 float decay = baseDecay * (float) group.getDecayMultiplier();
                 DietData.addValue(player, group.getName(), -decay);
             }
@@ -157,6 +163,9 @@ public class AppleSeed {
                         dietGroup.getGainMultiplier(),
                         dietGroup.getDecayMultiplier(),
                         dietGroup.isBeneficial(),
+                        dietGroup.isNegative(),
+                        dietGroup.ignoreAttack(),
+                        dietGroup.ignoreHunger(),
                         dietGroup.getTranslationKey()
                 ));
             }

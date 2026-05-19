@@ -23,13 +23,17 @@ public class DietGroup implements IDietGroup {
     private final double gainMultiplier;
     private final double decayMultiplier;
     private final boolean beneficial;
+    private final boolean isNegative;
+    private final boolean ignoreAttack;
+    private final boolean ignoreHunger;
     private final TagKey<Item> tag;
     private final String translationKey;
     private final List<String> effects;
 
     DietGroup(String name, Item icon, DietColor color, float defaultValue, int order,
-              double gainMultiplier, double decayMultiplier, boolean beneficial, TagKey<Item> tag,
-              String translationKey, List<String> effects) {
+              double gainMultiplier, double decayMultiplier, boolean beneficial, boolean isNegative,
+              boolean ignoreAttack, boolean ignoreHunger,
+              TagKey<Item> tag, String translationKey, List<String> effects) {
         this.name = name;
         this.icon = icon;
         this.color = color;
@@ -38,6 +42,9 @@ public class DietGroup implements IDietGroup {
         this.gainMultiplier = gainMultiplier;
         this.decayMultiplier = decayMultiplier;
         this.beneficial = beneficial;
+        this.isNegative = isNegative;
+        this.ignoreAttack = ignoreAttack;
+        this.ignoreHunger = ignoreHunger;
         this.tag = tag;
         this.translationKey = translationKey;
         this.effects = effects;
@@ -84,6 +91,21 @@ public class DietGroup implements IDietGroup {
     }
 
     @Override
+    public boolean isNegative() {
+        return isNegative;
+    }
+
+    @Override
+    public boolean ignoreAttack() {
+        return ignoreAttack;
+    }
+
+    @Override
+    public boolean ignoreHunger() {
+        return ignoreHunger;
+    }
+
+    @Override
     public TagKey<Item> getTag() {
         return tag;
     }
@@ -112,6 +134,9 @@ public class DietGroup implements IDietGroup {
         tag.putDouble("GainMultiplier", gainMultiplier);
         tag.putDouble("DecayMultiplier", decayMultiplier);
         tag.putBoolean("Beneficial", beneficial);
+        tag.putBoolean("IsNegative", isNegative);
+        tag.putBoolean("IgnoreAttack", ignoreAttack);
+        tag.putBoolean("IgnoreHunger", ignoreHunger);
         tag.putString("TranslationKey", translationKey);
         return tag;
     }
@@ -126,6 +151,9 @@ public class DietGroup implements IDietGroup {
                 tag.getDouble("GainMultiplier"),
                 tag.getDouble("DecayMultiplier"),
                 tag.getBoolean("Beneficial"),
+                tag.contains("IsNegative") && tag.getBoolean("IsNegative"),
+                tag.contains("IgnoreAttack") && tag.getBoolean("IgnoreAttack"),
+                tag.contains("IgnoreHunger") && tag.getBoolean("IgnoreHunger"),
                 null,
                 tag.getString("TranslationKey"),
                 Collections.emptyList()
@@ -144,6 +172,9 @@ public class DietGroup implements IDietGroup {
                     ((Number) data.get("gainMultiplier")).doubleValue(),
                     ((Number) data.get("decayMultiplier")).doubleValue(),
                     (Boolean) data.get("beneficial"),
+                    data.containsKey("isNegative") && (Boolean) data.get("isNegative"),
+                    data.containsKey("ignoreAttack") && (Boolean) data.get("ignoreAttack"),
+                    data.containsKey("ignoreHunger") && (Boolean) data.get("ignoreHunger"),
                     null,
                     (String) data.get("translationKey"),
                     Collections.emptyList()
@@ -162,6 +193,9 @@ public class DietGroup implements IDietGroup {
         data.put("gainMultiplier", gainMultiplier);
         data.put("decayMultiplier", decayMultiplier);
         data.put("beneficial", beneficial);
+        data.put("isNegative", isNegative);
+        data.put("ignoreAttack", ignoreAttack);
+        data.put("ignoreHunger", ignoreHunger);
         data.put("translationKey", translationKey);
         return data;
     }
@@ -176,6 +210,9 @@ public class DietGroup implements IDietGroup {
         private double gainMultiplier = 1.0;
         private double decayMultiplier = 1.0;
         private boolean beneficial = true;
+        private boolean isNegative = false;
+        private boolean ignoreAttack = false;
+        private boolean ignoreHunger = false;
         private TagKey<Item> tag;
         private String translationKey;
         private List<String> effects = Collections.emptyList();
@@ -220,6 +257,21 @@ public class DietGroup implements IDietGroup {
             return this;
         }
 
+        public Builder isNegative(boolean isNegative) {
+            this.isNegative = isNegative;
+            return this;
+        }
+
+        public Builder ignoreAttack(boolean ignoreAttack) {
+            this.ignoreAttack = ignoreAttack;
+            return this;
+        }
+
+        public Builder ignoreHunger(boolean ignoreHunger) {
+            this.ignoreHunger = ignoreHunger;
+            return this;
+        }
+
         public Builder tag(TagKey<Item> tag) {
             this.tag = tag;
             return this;
@@ -237,7 +289,8 @@ public class DietGroup implements IDietGroup {
 
         public DietGroup build() {
             return new DietGroup(name, icon, color, defaultValue, order,
-                    gainMultiplier, decayMultiplier, beneficial, tag, translationKey, effects);
+                    gainMultiplier, decayMultiplier, beneficial, isNegative,
+                    ignoreAttack, ignoreHunger, tag, translationKey, effects);
         }
     }
 }

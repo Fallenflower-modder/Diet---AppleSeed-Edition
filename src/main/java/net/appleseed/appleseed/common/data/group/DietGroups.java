@@ -282,6 +282,9 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
         builder.gainMultiplier(GsonHelper.getAsDouble(json, "gain_multiplier", 1.0));
         builder.decayMultiplier(GsonHelper.getAsDouble(json, "decay_multiplier", 1.0));
         builder.beneficial(GsonHelper.getAsBoolean(json, "beneficial", true));
+        builder.isNegative(GsonHelper.getAsBoolean(json, "is_negative", false));
+        builder.ignoreAttack(GsonHelper.getAsBoolean(json, "ignore_attack", false));
+        builder.ignoreHunger(GsonHelper.getAsBoolean(json, "ignore_hunger", false));
 
         if (json.has("translation_key")) {
             builder.translationKey(GsonHelper.getAsString(json, "translation_key"));

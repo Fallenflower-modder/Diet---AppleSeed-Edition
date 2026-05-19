@@ -28,6 +28,12 @@ public interface IDietGroup {
 
     String getTranslationKey();
 
+    boolean isNegative();
+
+    boolean ignoreAttack();
+
+    boolean ignoreHunger();
+
     boolean contains(ItemStack stack);
 
     CompoundTag save();
