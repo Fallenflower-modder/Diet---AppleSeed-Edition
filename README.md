@@ -27,7 +27,6 @@ This mod introduces a complete nutrition system that encourages players to eat d
 本模组引入了一套完整的饮食营养系统，鼓励玩家多样化饮食，而不是只吃金胡萝卜！
 
 > 💡 **Features: | 特性：**
-> - ✅ Data format compatible with original Diet mod | 与原版 Diet 数据格式兼容
 > - ✅ 100% Data-driven, zero hardcoding | 100% 数据驱动，零硬编码
 > - ✅ Powerful automatic nutrition calculation engine | 强大的自动营养计算引擎
 > - ✅ Developer tools built for modpack creators | 整合包开发者专属调试工具
