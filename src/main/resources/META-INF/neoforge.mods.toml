@@ -5,7 +5,7 @@ logoFile="META-INF/logo.png"
 
 [[mods]]
 modId="appleseed"
-version="2.0.0-1.21.1"
+version="2.0.1-1.21.1"
 displayName="Diet - AppleSeed Edition"
 authors="DrownedCloud"
 description='''
