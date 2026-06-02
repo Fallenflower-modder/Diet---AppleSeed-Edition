@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.common.config.DietConfig;
 import net.appleseed.appleseed.common.data.group.DietGroups;
@@ -198,7 +199,9 @@ public class FoodNutritionAutoCalculator {
         Set<Item> foodItems = new HashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {
             if (item != Items.AIR && item.getFoodProperties(new ItemStack(item), null) != null) {
-                foodItems.add(item);
+                if (DietHookRegistry.shouldProcessItem(item)) {
+                    foodItems.add(item);
+                }
             }
         }
         AppleSeedConstants.LOG.debug("[calculateAll] Found {} items with FoodProperties", foodItems.size());
@@ -694,6 +697,9 @@ public class FoodNutritionAutoCalculator {
     }
 
     private static boolean isValidRecipeType(Recipe<?> recipe) {
+        if (!DietHookRegistry.isValidRecipeType(recipe)) {
+            return false;
+        }
         return recipe instanceof CraftingRecipe
                 || recipe instanceof SmeltingRecipe
                 || recipe instanceof SmokingRecipe

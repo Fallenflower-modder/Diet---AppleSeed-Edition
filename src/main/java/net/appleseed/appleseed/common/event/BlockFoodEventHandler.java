@@ -1,6 +1,7 @@
 package net.appleseed.appleseed.common.event;
 
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.common.capability.DietData;
 import net.appleseed.appleseed.common.config.DietConfig;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
@@ -16,6 +17,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+
+import java.util.Map;
 
 @EventBusSubscriber(modid = AppleSeedConstants.MOD_ID)
 public class BlockFoodEventHandler {
@@ -65,6 +68,11 @@ public class BlockFoodEventHandler {
         }
 
         Block block = state.getBlock();
+
+        if (!DietHookRegistry.shouldProcessBlockFood(player, block, pos)) {
+            return;
+        }
+
         if (!FoodNutritionManager.INSTANCE.hasBlockNutritionData(block)) {
             AppleSeedConstants.LOG.warn("BlockFoodEventHandler: no nutrition data for block {}", block);
             return;
@@ -73,11 +81,19 @@ public class BlockFoodEventHandler {
         var nutritions = FoodNutritionManager.INSTANCE.getBlockNutritions(block);
         int bites = FoodNutritionManager.INSTANCE.getBlockBites(block);
         AppleSeedConstants.LOG.info("BlockFoodEventHandler: adding nutrition for block {} bites={}: {}", block, bites, nutritions);
+        Map<String, Float> gains = new java.util.HashMap<>();
         for (var entry : nutritions.entrySet()) {
             if (entry.getValue() > 0) {
-                DietData.addValue(player, entry.getKey(), entry.getValue() / bites);
+                gains.put(entry.getKey(), entry.getValue() / bites);
+            }
+        }
+        gains = DietHookRegistry.modifyBlockFoodGains(player, block, gains);
+        for (var entry : gains.entrySet()) {
+            if (entry.getValue() > 0) {
+                DietData.addValue(player, entry.getKey(), entry.getValue());
             }
         }
         DietData.syncToClient(player);
+        DietHookRegistry.onAfterBlockFoodEat(player, block);
     }
 }

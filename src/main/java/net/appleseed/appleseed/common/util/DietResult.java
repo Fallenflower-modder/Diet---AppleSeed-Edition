@@ -12,8 +12,10 @@ public class DietResult implements IDietResult {
 
     private final Map<IDietGroup, Float> values = new HashMap<>();
 
-    public void add(IDietGroup group, float value) {
-        values.put(group, value);
+    @Override
+    public IDietResult add(IDietGroup group, float value) {
+        values.merge(group, value, Float::sum);
+        return this;
     }
 
     @Override

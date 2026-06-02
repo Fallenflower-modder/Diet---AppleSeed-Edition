@@ -28,7 +28,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.function.Supplier;
 
-@EventBusSubscriber(modid = AppleSeed.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
 public class ClientSetup {
 
     public static final DeferredRegister<MenuType<?>> MENU_TYPES =
@@ -54,7 +54,7 @@ public class ClientSetup {
         event.register(DIET_MENU.get(), DietScreen::new);
     }
 
-    @EventBusSubscriber(modid = AppleSeed.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
     public static class ClientGameEvents {
         @SubscribeEvent
         public static void addReloadListener(AddReloadListenerEvent event) {

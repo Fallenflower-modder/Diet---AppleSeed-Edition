@@ -2,6 +2,7 @@ package net.appleseed.appleseed.client;
 
 import net.appleseed.appleseed.AppleSeed;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.client.screen.DietMenu;
 import net.appleseed.appleseed.client.screen.DietScreen;
@@ -78,6 +79,10 @@ public class DietClientEvents {
             return;
         }
 
+        if (!DietHookRegistry.shouldShowTooltip(stack, player)) {
+            return;
+        }
+
         FoodProperties food = stack.getFoodProperties(player);
         boolean isBlockFood = stack.is(FOOD_BLOCKS_ITEM_TAG);
         if (food == null && !isBlockFood) {
@@ -87,12 +92,15 @@ public class DietClientEvents {
         AppleSeedConstants.LOG.debug("DietClientEvents: tooltip for item={} food={} isBlockFood={}",
                 stack.getItem(), food != null, isBlockFood);
 
-        Map<String, Float> nutritions;
+        Map<String, Float> rawNutritions;
         if (SandwichCompat.isSandwich(stack)) {
-            nutritions = SandwichCompat.calculateNutrition(stack, player.level());
+            rawNutritions = SandwichCompat.calculateNutrition(stack, player.level());
         } else {
-            nutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
+            rawNutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
         }
+
+        final Map<String, Float> nutritions = DietHookRegistry.modifyTooltipNutrition(stack, player, rawNutritions);
+
         if (nutritions.isEmpty()) {
             AppleSeedConstants.LOG.debug("DietClientEvents: no nutrition data for item={}", stack.getItem());
             return;

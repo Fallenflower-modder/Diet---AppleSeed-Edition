@@ -1,5 +1,6 @@
 package net.appleseed.appleseed.common.capability;
 
+import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.network.SyncDietPacket;
@@ -33,11 +34,18 @@ public class DietData {
     }
 
     public static void setValue(Player player, String group, float value) {
+        value = DietHookRegistry.processBeforeSet(player, group, value);
+        float oldValue = getValue(player, group);
         CompoundTag tag = getDietTag(player);
-        tag.putFloat(group, Math.clamp(value, 0.0f, 1.0f));
+        float clamped = Math.clamp(value, 0.0f, 1.0f);
+        tag.putFloat(group, clamped);
+        if (clamped != oldValue) {
+            DietHookRegistry.processAfterChange(player, group, oldValue, clamped);
+        }
     }
 
     public static void addValue(Player player, String group, float value) {
+        value = DietHookRegistry.processBeforeAdd(player, group, value);
         IDietGroup groupObj = DietGroups.getGroup(player.level(), group).orElse(null);
         float multiplier = groupObj != null ? (float) groupObj.getGainMultiplier() : 1.0f;
         float current = getValue(player, group);

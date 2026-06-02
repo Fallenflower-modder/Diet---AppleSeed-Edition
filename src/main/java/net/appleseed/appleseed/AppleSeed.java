@@ -1,5 +1,6 @@
 package net.appleseed.appleseed;
 
+import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.client.ClientSetup;
 import net.appleseed.appleseed.client.DietClientEvents;
@@ -94,7 +95,12 @@ public class AppleSeed {
                     continue;
                 }
                 float decay = baseDecay * (float) group.getDecayMultiplier();
-                DietData.addValue(player, group.getName(), -decay);
+                decay = DietHookRegistry.processBeforeDecay(player, group.getName(), decay);
+                if (decay > 0) {
+                    float oldValue = DietData.getValue(player, group.getName());
+                    DietData.addValue(player, group.getName(), -decay);
+                    DietHookRegistry.processAfterChange(player, group.getName(), oldValue, DietData.getValue(player, group.getName()));
+                }
             }
             DietData.syncToClient(player);
         }
@@ -116,7 +122,12 @@ public class AppleSeed {
                     continue;
                 }
                 float decay = baseDecay * (float) group.getDecayMultiplier();
-                DietData.addValue(player, group.getName(), -decay);
+                decay = DietHookRegistry.processBeforeDecay(player, group.getName(), decay);
+                if (decay > 0) {
+                    float oldValue = DietData.getValue(player, group.getName());
+                    DietData.addValue(player, group.getName(), -decay);
+                    DietHookRegistry.processAfterChange(player, group.getName(), oldValue, DietData.getValue(player, group.getName()));
+                }
             }
             DietData.syncToClient(player);
         }
@@ -294,22 +305,30 @@ public class AppleSeed {
         if (entity instanceof Player player) {
             ItemStack stack = event.getItem();
             if (stack.getFoodProperties(player) != null) {
-                if (SandwichCompat.isSandwich(stack)) {
-                    Map<String, Float> gains = SandwichCompat.calculateNutrition(stack, player.level());
-                    for (Map.Entry<String, Float> entry : gains.entrySet()) {
-                        if (entry.getValue() > 0) {
-                            DietData.addValue(player, entry.getKey(), entry.getValue());
-                        }
-                    }
+                Map<String, Float> gains = new java.util.LinkedHashMap<>();
+
+                if (DietHookRegistry.shouldInterceptItemFood(player, stack)) {
+                    gains = DietHookRegistry.modifyItemFoodGains(player, stack, gains);
+                } else if (SandwichCompat.isSandwich(stack)) {
+                    gains = SandwichCompat.calculateNutrition(stack, player.level());
+                    gains = DietHookRegistry.modifyItemFoodGains(player, stack, gains);
                 } else {
                     for (IDietGroup group : DietGroups.getGroups(player.level())) {
                         float gain = FoodNutritionManager.INSTANCE.getNutritionValue(stack.getItem(), group.getName());
                         if (gain > 0) {
-                            DietData.addValue(player, group.getName(), gain);
+                            gains.put(group.getName(), gain);
                         }
+                    }
+                    gains = DietHookRegistry.modifyItemFoodGains(player, stack, gains);
+                }
+
+                for (Map.Entry<String, Float> entry : gains.entrySet()) {
+                    if (entry.getValue() > 0) {
+                        DietData.addValue(player, entry.getKey(), entry.getValue());
                     }
                 }
                 DietData.syncToClient(player);
+                DietHookRegistry.onAfterItemFoodEat(player, stack);
             }
         }
     }
