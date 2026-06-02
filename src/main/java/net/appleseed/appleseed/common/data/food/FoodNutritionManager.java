@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.query.IDietFoodQuery;
 import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.resources.ResourceLocation;
@@ -28,7 +29,7 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FoodNutritionManager extends SimpleJsonResourceReloadListener {
+public class FoodNutritionManager extends SimpleJsonResourceReloadListener implements IDietFoodQuery {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final java.nio.file.Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("apple_seed_foods");

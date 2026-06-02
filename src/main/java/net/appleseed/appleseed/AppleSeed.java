@@ -1,6 +1,7 @@
 package net.appleseed.appleseed;
 
 import net.appleseed.appleseed.api.hook.DietHookRegistry;
+import net.appleseed.appleseed.api.query.DietQuery;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.client.ClientSetup;
 import net.appleseed.appleseed.client.DietClientEvents;
@@ -73,6 +74,8 @@ public class AppleSeed {
         NeoForge.EVENT_BUS.register(BlockFoodEventHandler.class);
 
         container.registerConfig(ModConfig.Type.COMMON, DietConfig.SPEC);
+
+        DietQuery.setInstance(FoodNutritionManager.INSTANCE);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             NeoForge.EVENT_BUS.register(DietClientEvents.class);
