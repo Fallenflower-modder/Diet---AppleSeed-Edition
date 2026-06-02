@@ -10,7 +10,7 @@ repositories {
     mavenCentral()
 }
 
-version = '1.3.0'
+version = '2.0.0-1.21.1'
 base.archivesName = "appleseed"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
