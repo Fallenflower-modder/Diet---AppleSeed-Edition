@@ -1,15 +1,25 @@
 package net.appleseed.appleseed.client;
 
 import net.appleseed.appleseed.AppleSeed;
+import net.appleseed.appleseed.AppleSeedConstants;
+import net.appleseed.appleseed.api.type.IDietGroup;
+import net.appleseed.appleseed.client.screen.DietMenu;
+import net.appleseed.appleseed.client.screen.DietScreen;
 import net.appleseed.appleseed.client.screen.InventoryScreenButton;
-import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
+import net.appleseed.appleseed.common.capability.DietData;
+import net.appleseed.appleseed.common.config.DietConfig;
 import net.appleseed.appleseed.common.data.group.DietGroups;
-import net.appleseed.appleseed.common.data.suite.DietSuites;
+import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
+import net.appleseed.appleseed.compat.FTBCompat;
 import net.appleseed.appleseed.compat.SandwichCompat;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,11 +34,26 @@ import java.util.Map;
 @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
 public class DietClientEvents {
 
+    private static final TagKey<Item> FOOD_BLOCKS_ITEM_TAG = TagKey.create(
+            BuiltInRegistries.ITEM.key(),
+            ResourceLocation.fromNamespaceAndPath(AppleSeedConstants.MOD_ID, "food_blocks")
+    );
+
     private static InventoryScreenButton dietButton;
 
     @SubscribeEvent
     public static void onGuiInit(ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof InventoryScreen screen) {
+            DietConfig.EntranceVisibility mode = DietConfig.getEffectiveEntranceVisibility();
+            FTBCompat.updateButtonVisibility();
+            if (mode == DietConfig.EntranceVisibility.INVISIBLE) {
+                dietButton = null;
+                return;
+            }
+            if (mode == DietConfig.EntranceVisibility.FTB_COMPACT) {
+                dietButton = null;
+                return;
+            }
             int x = screen.getGuiLeft() + 128;
             int y = screen.getGuiTop() + 61;
             dietButton = new InventoryScreenButton(x, y);
@@ -54,9 +79,13 @@ public class DietClientEvents {
         }
 
         FoodProperties food = stack.getFoodProperties(player);
-        if (food == null) {
+        boolean isBlockFood = stack.is(FOOD_BLOCKS_ITEM_TAG);
+        if (food == null && !isBlockFood) {
             return;
         }
+
+        AppleSeedConstants.LOG.debug("DietClientEvents: tooltip for item={} food={} isBlockFood={}",
+                stack.getItem(), food != null, isBlockFood);
 
         Map<String, Float> nutritions;
         if (SandwichCompat.isSandwich(stack)) {
@@ -65,6 +94,7 @@ public class DietClientEvents {
             nutritions = FoodNutritionManager.getNutritionsForClient(stack.getItem(), true);
         }
         if (nutritions.isEmpty()) {
+            AppleSeedConstants.LOG.debug("DietClientEvents: no nutrition data for item={}", stack.getItem());
             return;
         }
 

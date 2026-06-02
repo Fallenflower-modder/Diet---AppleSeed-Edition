@@ -3,6 +3,7 @@ package net.appleseed.appleseed;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.client.ClientSetup;
 import net.appleseed.appleseed.client.DietClientEvents;
+import net.appleseed.appleseed.common.event.BlockFoodEventHandler;
 import net.appleseed.appleseed.common.capability.DietData;
 import net.appleseed.appleseed.common.capability.DietEffects;
 import net.appleseed.appleseed.common.config.DietConfig;
@@ -10,8 +11,11 @@ import net.appleseed.appleseed.common.data.food.FoodNutritionAutoCalculator;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
+import net.appleseed.appleseed.common.data.recipe.SimulateRecipe;
+import net.appleseed.appleseed.common.recipe.RecipeRegistry;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
 import net.appleseed.appleseed.compat.SandwichCompat;
+import net.appleseed.appleseed.network.OpenDietScreenPacket;
 import net.appleseed.appleseed.network.SyncDietConfigPacket;
 import net.appleseed.appleseed.network.SyncDietPacket;
 import net.minecraft.world.damagesource.DamageSource;
@@ -51,6 +55,7 @@ public class AppleSeed {
     private static final java.util.Map<java.util.UUID, java.util.Map<String, Float>> deathNutritionCache = new java.util.HashMap<>();
 
     public AppleSeed(IEventBus bus, ModContainer container) {
+        bus.register(RecipeRegistry.class);
         ClientSetup.MENU_TYPES.register(bus);
         bus.addListener(this::commonSetup);
         bus.addListener(this::registerPayloads);
@@ -64,6 +69,7 @@ public class AppleSeed {
         NeoForge.EVENT_BUS.addListener(this::onPlayerRespawn);
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(this::onPlayerHurt);
+        NeoForge.EVENT_BUS.register(BlockFoodEventHandler.class);
 
         container.registerConfig(ModConfig.Type.COMMON, DietConfig.SPEC);
 
@@ -120,6 +126,7 @@ public class AppleSeed {
         final PayloadRegistrar registrar = event.registrar(AppleSeed.MOD_ID);
         registrar.playToClient(SyncDietPacket.TYPE, SyncDietPacket.STREAM_CODEC, SyncDietPacket::handle);
         registrar.playToClient(SyncDietConfigPacket.TYPE, SyncDietConfigPacket.STREAM_CODEC, SyncDietConfigPacket::handle);
+        registrar.playToClient(OpenDietScreenPacket.TYPE, OpenDietScreenPacket.STREAM_CODEC, OpenDietScreenPacket::handle);
     }
 
     private void onConfigReload(final ModConfigEvent.Reloading event) {
@@ -176,6 +183,13 @@ public class AppleSeed {
             String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(entry.getKey()).toString();
             foodData.put(itemId, entry.getValue());
         }
+        for (Map.Entry<net.minecraft.world.level.block.Block, Map<String, Float>> entry : FoodNutritionManager.INSTANCE.getAllBlockData().entrySet()) {
+            net.minecraft.world.item.Item blockItem = entry.getKey().asItem();
+            if (blockItem != net.minecraft.world.item.Items.AIR) {
+                String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(blockItem).toString();
+                foodData.putIfAbsent(itemId, entry.getValue());
+            }
+        }
 
         SyncDietConfigPacket packet = new SyncDietConfigPacket(groupsData, foodData);
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, packet);
@@ -231,11 +245,12 @@ public class AppleSeed {
     }
 
     private void onServerStarting(final ServerStartingEvent event) {
-        FoodNutritionAutoCalculator.calculateAllAsync(event.getServer());
+        AppleSeedConstants.LOG.debug("Server starting, deferring nutrition calculation to datapack sync");
     }
 
     private void onDatapackSync(final OnDatapackSyncEvent event) {
         if (event.getPlayer() == null) {
+            AppleSeedConstants.LOG.debug("DatapackSync (all players): starting nutrition auto-calculation");
             FoodNutritionAutoCalculator.calculateAllAsync(event.getPlayerList().getServer(), true);
             event.getPlayerList().getServer().execute(() -> {
                 for (net.minecraft.server.level.ServerPlayer player : event.getPlayerList().getPlayers()) {

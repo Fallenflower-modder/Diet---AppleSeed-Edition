@@ -28,8 +28,11 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
     public static final ResourceLocation PROGRESS_FULL =
             ResourceLocation.fromNamespaceAndPath(AppleSeed.MOD_ID, "textures/gui/progress_full.png");
 
+    private static final int ITEMS_PER_PAGE = 5;
+
     private int infoIconX;
     private int infoIconY;
+    private int currentPage = 0;
 
     public DietScreen(DietMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -45,31 +48,53 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
 
     @Override
     protected void init() {
-        super.init();
         List<IDietGroup> sortedGroups = getSortedGroups();
+        int totalPages = (sortedGroups.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE;
 
-        this.imageHeight = 110 + sortedGroups.size() * 18;
+        if (sortedGroups.size() <= 6) {
+            this.imageHeight = sortedGroups.size() * 18 + 72;
+        } else {
+            this.imageHeight = ITEMS_PER_PAGE * 18 + 74;
+        }
+
+        super.init();
 
         this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
         this.infoIconX = this.leftPos + this.titleLabelX + this.font.width(this.title) + 8;
         this.infoIconY = this.topPos + 6;
 
         this.clearWidgets();
+
         if (sortedGroups.size() <= 6) {
-            int buttonY = this.topPos + 128;
+            int buttonY = this.topPos + 28 + sortedGroups.size() * 18 + 12;
             this.addRenderableWidget(Button.builder(Component.translatable("gui.appleseed.close"), button -> {
                 this.minecraft.player.closeContainer();
             }).bounds(this.leftPos + (this.imageWidth - 60) / 2, buttonY, 60, 20).build());
+        } else {
+            currentPage = Math.clamp(currentPage, 0, totalPages - 1);
+
+            int buttonY = this.topPos + 28 + ITEMS_PER_PAGE * 18 + 16;
+            this.addRenderableWidget(Button.builder(Component.translatable("gui.appleseed.close"), button -> {
+                this.minecraft.player.closeContainer();
+            }).bounds(this.leftPos + (this.imageWidth - 60) / 2, buttonY, 60, 20).build());
+
+            int paginationY = buttonY - 22;
+            int prevX = this.leftPos + 30;
+            int nextX = this.leftPos + this.imageWidth - 52;
+            this.addRenderableWidget(Button.builder(Component.literal("<"), button -> {
+                currentPage = (currentPage - 1 + totalPages) % totalPages;
+                this.init();
+            }).bounds(prevX, paginationY, 18, 18).build());
+            this.addRenderableWidget(Button.builder(Component.literal(">"), button -> {
+                currentPage = (currentPage + 1) % totalPages;
+                this.init();
+            }).bounds(nextX, paginationY, 18, 18).build());
         }
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         List<IDietGroup> sortedGroups = getSortedGroups();
-        int expectedHeight = 110 + sortedGroups.size() * 18;
-        if (this.imageHeight != expectedHeight) {
-            this.init();
-        }
 
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTicks);
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -170,15 +195,24 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
         guiGraphics.blit(DIET_ICONS, infoIconX, infoIconY, 160, 0, 16, 16, 16, 16);
 
         Player player = this.menu.getPlayer();
-        List<IDietGroup> sortedGroups = getSortedGroups();
+        List<IDietGroup> allGroups = getSortedGroups();
+        boolean needsPagination = allGroups.size() > 6;
+
+        int startIndex = 0;
+        int endIndex = allGroups.size();
+        if (needsPagination) {
+            startIndex = currentPage * ITEMS_PER_PAGE;
+            endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allGroups.size());
+        }
+        List<IDietGroup> pageGroups = allGroups.subList(startIndex, endIndex);
 
         int iconX = this.leftPos + 18;
         int nameX = this.leftPos + 42;
         int barX = this.leftPos + 82;
         int y = this.topPos + 28;
 
-        for (int i = 0; i < sortedGroups.size(); i++) {
-            IDietGroup group = sortedGroups.get(i);
+        for (int i = 0; i < pageGroups.size(); i++) {
+            IDietGroup group = pageGroups.get(i);
             float value = DietData.getValue(player, group.getName());
             int barWidth = (int) (value * 122);
             int color = group.getColor().toInt();
@@ -207,6 +241,16 @@ public class DietScreen extends AbstractContainerScreen<DietMenu> {
 
             String percentText = String.format("%.0f%%", value * 100);
             guiGraphics.drawString(this.font, percentText, barX + 125, rowY - 1, color, false);
+        }
+
+        if (needsPagination) {
+            int totalPages = (allGroups.size() + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE;
+            String pageText = (currentPage + 1) + " / " + totalPages;
+            int pageTextWidth = this.font.width(pageText);
+            int paginationTextY = (this.topPos + 28 + ITEMS_PER_PAGE * 18 + 16) - 22 + 5;
+            guiGraphics.drawString(this.font, pageText,
+                    this.leftPos + (this.imageWidth - pageTextWidth) / 2,
+                    paginationTextY, 0x404040, false);
         }
     }
 

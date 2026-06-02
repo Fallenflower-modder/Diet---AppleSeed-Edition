@@ -1,8 +1,11 @@
 package net.appleseed.appleseed.network;
 
+import net.appleseed.appleseed.client.screen.DietMenu;
+import net.appleseed.appleseed.client.screen.DietScreen;
 import net.appleseed.appleseed.common.capability.DietData;
 import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -28,6 +31,20 @@ public class ClientPacketHandler {
         context.enqueueWork(() -> {
             ServerDietConfig.setServerGroups(packet.groups());
             ServerDietConfig.setServerFoodData(packet.foodData());
+        });
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static void handleOpenScreen(final OpenDietScreenPacket packet, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                Minecraft.getInstance().setScreen(new DietScreen(
+                        new DietMenu(0, player.getInventory()),
+                        player.getInventory(),
+                        Component.translatable("gui.appleseed.title")
+                ));
+            }
         });
     }
 }
