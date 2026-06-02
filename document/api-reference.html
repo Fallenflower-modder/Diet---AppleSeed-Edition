@@ -213,6 +213,10 @@
     <a href="#idiettooltipfilterhook">IDietTooltipFilterHook</a>
     <a href="#idietnutritionrulehook">IDietNutritionRuleHook</a>
 
+    <div class="category">Query API</div>
+    <a href="#diet-query">DietQuery</a>
+    <a href="#idietfoodquery">IDietFoodQuery</a>
+
     <div class="category">Type API</div>
     <a href="#idietresult">IDietResult</a>
     <a href="#idietgroup">IDietGroup</a>
@@ -245,6 +249,7 @@
 <p>All API classes reside under the <code>net.appleseed.appleseed.api</code> package:</p>
 <ul>
   <li><code>api.hook</code> &mdash; Hook interfaces + <code>DietHookRegistry</code> (register/unregister/call)</li>
+  <li><code>api.query</code> &mdash; Query interfaces (<code>IDietFoodQuery</code>, <code>DietQuery</code>)</li>
   <li><code>api.type</code> &mdash; Data type interfaces (<code>IDietGroup</code>, <code>IDietResult</code>, etc.)</li>
   <li><code>api.util</code> &mdash; Utility records (<code>DietColor</code>)</li>
 </ul>
@@ -796,6 +801,128 @@
 </div>
 
 <!-- ============================================================ -->
+<h2 id="diet-query">DietQuery</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.query.DietQuery</span>
+</p>
+
+<p>
+  Static accessor for the nutrition data query API. Provides a single entry point
+  <code>getInstance()</code> that returns the current <code>IDietFoodQuery</code> implementation.
+  The instance is set automatically during mod initialization.
+</p>
+
+<table>
+<tr><th>Method</th><th>Description</th></tr>
+<tr><td><code>static IDietFoodQuery getInstance()</code></td><td>Returns the current query implementation</td></tr>
+<tr><td><code>static void setInstance(IDietFoodQuery)</code></td><td>Sets the query implementation (called internally)</td></tr>
+</table>
+
+<div class="note">
+  <strong>Thread Safety:</strong> The instance is set once during mod initialization and is safe
+  to read from any thread thereafter. External mods should only call <code>getInstance()</code>.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietfoodquery">IDietFoodQuery</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.query.IDietFoodQuery</span>
+</p>
+
+<p>Query interface for retrieving nutrition data for items and blocks.</p>
+
+<h3>Item Methods</h3>
+
+<h4>getNutritions</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">getNutritions</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  Returns all nutrition data for a given item as a map of group name to value (0.0 ~ 1.0).
+  Automatically falls back to block nutrition data if the item is a <code>BlockItem</code>.
+</div>
+
+<h4>getNutritionValue</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">getNutritionValue</span>(<span class="ty">Item</span> item, <span class="ty">String</span> group)</div>
+<div class="desc">
+  Returns the nutrition value for a specific group. Returns <code>0.0f</code> if no data exists.
+</div>
+
+<h4>hasNutritionData</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">hasNutritionData</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  Checks whether the given item has any nutrition data registered.
+  Also checks block nutrition if the item is a <code>BlockItem</code>.
+</div>
+
+<h4>getAllFoodData</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">Item</span>, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt;&gt; <span class="m">getAllFoodData</span>()</div>
+<div class="desc">
+  Returns all registered food nutrition data. The returned map is a direct reference &mdash;
+  modifications during iteration may cause issues.
+</div>
+
+<h3>Block Methods</h3>
+
+<h4>getBlockNutritions</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">getBlockNutritions</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  Returns all nutrition data for a given block food. The values represent the
+  <em>total</em> nutrition for the entire block (not per bite).
+</div>
+
+<h4>getBlockNutritionValue</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">getBlockNutritionValue</span>(<span class="ty">Block</span> block, <span class="ty">String</span> group)</div>
+<div class="desc">
+  Returns the nutrition value for a specific group on a block food. Returns <code>0.0f</code> if no data exists.
+</div>
+
+<h4>hasBlockNutritionData</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">hasBlockNutritionData</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  Checks whether the given block has nutrition data registered.
+</div>
+
+<h4>getBlockBites</h4>
+<div class="sig"><span class="kw">int</span> <span class="m">getBlockBites</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  Returns the number of bites for a block food. Each bite grants <code>total / bites</code> nutrition.
+  Returns <code>1</code> if no data exists.
+</div>
+
+<h4>getAllBlockData</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">Block</span>, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt;&gt; <span class="m">getAllBlockData</span>()</div>
+<div class="desc">
+  Returns all registered block food nutrition data.
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Query Nutrition Data for an Item</div>
+<pre><span class="ty">IDietFoodQuery</span> query = <span class="ty">DietQuery</span>.<span class="m">getInstance</span>();
+
+<span class="c">// Check if an item has nutrition data</span>
+<span class="kw">if</span> (query.<span class="m">hasNutritionData</span>(<span class="ty">Items</span>.APPLE)) {
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; nutritions = query.<span class="m">getNutritions</span>(<span class="ty">Items</span>.APPLE);
+    <span class="kw">float</span> fruitValue = query.<span class="m">getNutritionValue</span>(<span class="ty">Items</span>.APPLE, <span class="string">"fruits"</span>);
+    <span class="ty">System</span>.out.<span class="m">println</span>(<span class="string">"Apple nutrition: "</span> + nutritions);
+}
+
+<span class="c">// Query block food data</span>
+<span class="kw">if</span> (query.<span class="m">hasBlockNutritionData</span>(<span class="ty">Blocks</span>.CAKE)) {
+    <span class="kw">int</span> bites = query.<span class="m">getBlockBites</span>(<span class="ty">Blocks</span>.CAKE);  <span class="c">// 7</span>
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; blockNutritions = query.<span class="m">getBlockNutritions</span>(<span class="ty">Blocks</span>.CAKE);
+    <span class="kw">float</span> perBite = blockNutritions.<span class="m">getOrDefault</span>(<span class="string">"sugars"</span>, 0f) / bites;
+}
+
+<span class="c">// Iterate all registered food data</span>
+<span class="kw">for</span> (var entry : query.<span class="m">getAllFoodData</span>().<span class="m">entrySet</span>()) {
+    <span class="ty">Item</span> item = entry.<span class="m">getKey</span>();
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; data = entry.<span class="m">getValue</span>();
+    <span class="c">// ...</span>
+}</pre>
+</div>
+
+<!-- ============================================================ -->
 <h2 id="flow-sheet">Execution Flow</h2>
 
 <p>How the Hook API integrates into AppleSeed's core systems:</p>
@@ -901,6 +1028,11 @@
   <span class="a">├──</span> <span class="ty">IDietRecipeFilterHook</span>    <span class="c">// Recipe/item filter hook</span>
   <span class="a">├──</span> <span class="ty">IDietTooltipFilterHook</span>   <span class="c">// Tooltip display hook</span>
   <span class="a">└──</span> <span class="ty">IDietNutritionRuleHook</span>   <span class="c">// Value add/set/decay hook</span>
+
+<span class="c">// Query API &mdash; nutrition data retrieval</span>
+<span class="ty">net.appleseed.appleseed.api.query</span>
+  <span class="a">├──</span> <span class="ty">DietQuery</span>                 <span class="c">// Static accessor (getInstance/setInstance)</span>
+  <span class="a">└──</span> <span class="ty">IDietFoodQuery</span>            <span class="c">// Query interface (items + blocks)</span>
 
 <span class="c">// Type API &mdash; data model interfaces</span>
 <span class="ty">net.appleseed.appleseed.api.type</span>

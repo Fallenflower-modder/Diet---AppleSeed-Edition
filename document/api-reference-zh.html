@@ -213,6 +213,10 @@
     <a href="#idiettooltipfilterhook">IDietTooltipFilterHook</a>
     <a href="#idietnutritionrulehook">IDietNutritionRuleHook</a>
 
+    <div class="category">查询 API</div>
+    <a href="#diet-query">DietQuery</a>
+    <a href="#idietfoodquery">IDietFoodQuery</a>
+
     <div class="category">类型 API</div>
     <a href="#idietresult">IDietResult</a>
     <a href="#idietgroup">IDietGroup</a>
@@ -244,6 +248,7 @@
 <p>所有 API 类均位于 <code>net.appleseed.appleseed.api</code> 包下：</p>
 <ul>
   <li><code>api.hook</code> &mdash; Hook 接口 + <code>DietHookRegistry</code>（注册/注销/调用）</li>
+  <li><code>api.query</code> &mdash; 查询接口（<code>IDietFoodQuery</code>、<code>DietQuery</code>）</li>
   <li><code>api.type</code> &mdash; 数据类型接口（<code>IDietGroup</code>、<code>IDietResult</code> 等）</li>
   <li><code>api.util</code> &mdash; 工具记录类（<code>DietColor</code>）</li>
 </ul>
@@ -786,6 +791,125 @@
 </div>
 
 <!-- ============================================================ -->
+<h2 id="diet-query">DietQuery</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.query.DietQuery</span>
+</p>
+
+<p>
+  营养数据查询 API 的静态访问器。提供唯一的入口点 <code>getInstance()</code>，
+  返回当前的 <code>IDietFoodQuery</code> 实现。实例在模组初始化期间自动设置。
+</p>
+
+<table>
+<tr><th>方法</th><th>描述</th></tr>
+<tr><td><code>static IDietFoodQuery getInstance()</code></td><td>返回当前的查询实现</td></tr>
+<tr><td><code>static void setInstance(IDietFoodQuery)</code></td><td>设置查询实现（内部调用）</td></tr>
+</table>
+
+<div class="note">
+  <strong>线程安全：</strong> 实例在模组初始化期间设置一次，之后可从任意线程安全读取。
+  外部模组应仅调用 <code>getInstance()</code>。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietfoodquery">IDietFoodQuery</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.query.IDietFoodQuery</span>
+</p>
+
+<p>查询接口，用于获取物品和方块的营养数据。</p>
+
+<h3>物品方法</h3>
+
+<h4>getNutritions</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">getNutritions</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  返回指定物品的所有营养数据，以营养组名称到数值（0.0 ~ 1.0）的映射形式返回。
+  如果物品是 <code>BlockItem</code>，会自动回退到方块营养数据。
+</div>
+
+<h4>getNutritionValue</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">getNutritionValue</span>(<span class="ty">Item</span> item, <span class="ty">String</span> group)</div>
+<div class="desc">
+  返回特定营养组的值。如果不存在数据则返回 <code>0.0f</code>。
+</div>
+
+<h4>hasNutritionData</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">hasNutritionData</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  检查指定物品是否有已注册的营养数据。如果物品是 <code>BlockItem</code>，也会检查方块营养数据。
+</div>
+
+<h4>getAllFoodData</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">Item</span>, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt;&gt; <span class="m">getAllFoodData</span>()</div>
+<div class="desc">
+  返回所有已注册的食物营养数据。返回的 Map 是直接引用 &mdash;
+  在迭代期间修改可能导致问题。
+</div>
+
+<h3>方块方法</h3>
+
+<h4>getBlockNutritions</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">getBlockNutritions</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  返回指定方块食物的所有营养数据。数值代表整个方块的<em>总</em>营养值（非每口值）。
+</div>
+
+<h4>getBlockNutritionValue</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">getBlockNutritionValue</span>(<span class="ty">Block</span> block, <span class="ty">String</span> group)</div>
+<div class="desc">
+  返回方块食物特定营养组的值。如果不存在数据则返回 <code>0.0f</code>。
+</div>
+
+<h4>hasBlockNutritionData</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">hasBlockNutritionData</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  检查指定方块是否有已注册的营养数据。
+</div>
+
+<h4>getBlockBites</h4>
+<div class="sig"><span class="kw">int</span> <span class="m">getBlockBites</span>(<span class="ty">Block</span> block)</div>
+<div class="desc">
+  返回方块食物的口数。每口提供 <code>总营养值 / 口数</code> 的营养。
+  如果不存在数据则返回 <code>1</code>。
+</div>
+
+<h4>getAllBlockData</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">Block</span>, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt;&gt; <span class="m">getAllBlockData</span>()</div>
+<div class="desc">
+  返回所有已注册的方块食物营养数据。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 查询物品的营养数据</div>
+<pre><span class="ty">IDietFoodQuery</span> query = <span class="ty">DietQuery</span>.<span class="m">getInstance</span>();
+
+<span class="c">// 检查物品是否有营养数据</span>
+<span class="kw">if</span> (query.<span class="m">hasNutritionData</span>(<span class="ty">Items</span>.APPLE)) {
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; nutritions = query.<span class="m">getNutritions</span>(<span class="ty">Items</span>.APPLE);
+    <span class="kw">float</span> fruitValue = query.<span class="m">getNutritionValue</span>(<span class="ty">Items</span>.APPLE, <span class="string">"fruits"</span>);
+    <span class="ty">System</span>.out.<span class="m">println</span>(<span class="string">"苹果营养: "</span> + nutritions);
+}
+
+<span class="c">// 查询方块食物数据</span>
+<span class="kw">if</span> (query.<span class="m">hasBlockNutritionData</span>(<span class="ty">Blocks</span>.CAKE)) {
+    <span class="kw">int</span> bites = query.<span class="m">getBlockBites</span>(<span class="ty">Blocks</span>.CAKE);  <span class="c">// 7</span>
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; blockNutritions = query.<span class="m">getBlockNutritions</span>(<span class="ty">Blocks</span>.CAKE);
+    <span class="kw">float</span> perBite = blockNutritions.<span class="m">getOrDefault</span>(<span class="string">"sugars"</span>, 0f) / bites;
+}
+
+<span class="c">// 遍历所有已注册的食物数据</span>
+<span class="kw">for</span> (var entry : query.<span class="m">getAllFoodData</span>().<span class="m">entrySet</span>()) {
+    <span class="ty">Item</span> item = entry.<span class="m">getKey</span>();
+    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; data = entry.<span class="m">getValue</span>();
+    <span class="c">// ...</span>
+}</pre>
+</div>
+
+<!-- ============================================================ -->
 <h2 id="flow-sheet">执行流程</h2>
 
 <p>Hook API 如何集成到 AppleSeed 核心系统中：</p>
@@ -892,7 +1016,12 @@
   <span class="a">├──</span> <span class="ty">IDietTooltipFilterHook</span>   <span class="c">// Tooltip 显示 Hook</span>
   <span class="a">└──</span> <span class="ty">IDietNutritionRuleHook</span>   <span class="c">// 营养值增减/衰减 Hook</span>
 
-<span class="c">// Type API &mdash; 数据模型接口</span>
+<span class="c">// 查询 API &mdash; 营养数据检索</span>
+<span class="ty">net.appleseed.appleseed.api.query</span>
+  <span class="a">├──</span> <span class="ty">DietQuery</span>                 <span class="c">// 静态访问器（getInstance/setInstance）</span>
+  <span class="a">└──</span> <span class="ty">IDietFoodQuery</span>            <span class="c">// 查询接口（物品 + 方块）</span>
+
+<span class="c">// 类型 API &mdash; 数据模型接口</span>
 <span class="ty">net.appleseed.appleseed.api.type</span>
   <span class="a">├──</span> <span class="ty">IDietResult</span>              <span class="c">// 不可变营养结果映射</span>
   <span class="a">├──</span> <span class="ty">IDietGroup</span>               <span class="c">// 营养组定义</span>
