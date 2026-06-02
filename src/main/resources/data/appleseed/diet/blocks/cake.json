@@ -1,0 +1,9 @@
+{
+  "source_block": "minecraft:cake",
+  "bites": 7,
+  "nutritions": {
+    "proteins": 0.18,
+    "sugars": 0.04,
+    "grains": 0.03
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "icon": "appleseed:textures/gui/diet_button_normal.png",
+  "sort_index": 8,
+  "click": [
+    "command:/diet screen"
+  ],
+  "required_mods": [
+    "appleseed"
+  ],
+  "tooltip": [
+    {
+      "text": "Open Diet Balance Screen",
+      "color": "gold"
+    }
+  ]
+}
