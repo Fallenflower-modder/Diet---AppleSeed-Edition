@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppleSeed API 参考文档</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --text: #e0e0e0;
+    --text2: #a0a0b0;
+    --code-bg: #0d1117;
+    --border: #2a2a4a;
+    --keyword: #ff79c6;
+    --type: #8be9fd;
+    --string: #f1fa8c;
+    --comment: #6272a4;
+    --method: #50fa7b;
+    --annotation: #bd93f9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px;
+    z-index: 10;
+  }
+  .sidebar h1 {
+    font-size: 1.3em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .sidebar .version {
+    font-size: 0.8em;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .sidebar nav a {
+    display: block;
+    color: var(--text);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    transition: background 0.15s;
+  }
+  .sidebar nav a:hover { background: var(--surface2); color: var(--accent); }
+  .sidebar nav .category {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin: 16px 0 6px 0;
+    letter-spacing: 1px;
+  }
+  .main {
+    margin-left: 280px;
+    padding: 40px 50px;
+    max-width: 1100px;
+  }
+  h2 {
+    font-size: 1.8em;
+    color: var(--accent);
+    margin: 40px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 {
+    font-size: 1.3em;
+    color: var(--type);
+    margin: 28px 0 10px 0;
+  }
+  h4 {
+    font-size: 1.05em;
+    color: var(--method);
+    margin: 18px 0 6px 0;
+  }
+  p, li { margin: 6px 0; font-size: 0.95em; }
+  ul { padding-left: 24px; }
+  .sig {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 10px 0;
+    font-size: 0.88em;
+    overflow-x: auto;
+  }
+  .sig .kw { color: var(--keyword); }
+  .sig .ty { color: var(--type); }
+  .sig .m { color: var(--method); }
+  .sig .a { color: var(--annotation); }
+  .sig .c { color: var(--comment); }
+  .desc {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 10px 16px;
+    margin: 8px 0 16px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9em;
+  }
+  .example {
+    margin: 16px 0 24px 0;
+  }
+  .example .label {
+    font-size: 0.8em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .example pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px 0;
+    font-size: 0.9em;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tag {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--type);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.78em;
+    font-family: monospace;
+  }
+  .note {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.9em;
+  }
+  .note strong { color: var(--accent); }
+  code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+  }
+  a { color: var(--type); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 0.85em;
+    line-height: 2;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <h1>AppleSeed API</h1>
+  <div class="version">NeoForge 1.21.1 &nbsp;|&nbsp; Mod ID: <code>appleseed</code></div>
+  <nav>
+    <a href="#overview">概览</a>
+    <a href="#quick-start">快速开始</a>
+
+    <div class="category">Hook API</div>
+    <a href="#diet-hook-registry">DietHookRegistry</a>
+    <a href="#idietitemfoodeathook">IDietItemFoodEatHook</a>
+    <a href="#idietblockfoodeathook">IDietBlockFoodEatHook</a>
+    <a href="#idietrecipefilterhook">IDietRecipeFilterHook</a>
+    <a href="#idiettooltipfilterhook">IDietTooltipFilterHook</a>
+    <a href="#idietnutritionrulehook">IDietNutritionRuleHook</a>
+
+    <div class="category">类型 API</div>
+    <a href="#idietresult">IDietResult</a>
+    <a href="#idietgroup">IDietGroup</a>
+    <a href="#idietsuite">IDietSuite</a>
+    <a href="#idieteffect">IDietEffect</a>
+    <a href="#idietcondition">IDietCondition</a>
+    <a href="#idietattribute">IDietAttribute</a>
+    <a href="#idietstatuseffect">IDietStatusEffect</a>
+
+    <div class="category">工具类</div>
+    <a href="#dietcolor">DietColor</a>
+
+    <div class="category">附录</div>
+    <a href="#flow-sheet">执行流程</a>
+    <a href="#package-structure">包结构</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+<!-- ============================================================ -->
+<h2 id="overview">概览</h2>
+
+<p>
+  AppleSeed 提供了一套完整的 <strong>Hook API</strong>，允许其他模组在运行时拦截和覆写核心营养系统的行为。
+  配合 <strong>Type API</strong> 进行数据建模，外部模组可以完全自定义食物检测、配方过滤、Tooltip 渲染和营养值计算规则。
+</p>
+
+<p>所有 API 类均位于 <code>net.appleseed.appleseed.api</code> 包下：</p>
+<ul>
+  <li><code>api.hook</code> &mdash; Hook 接口 + <code>DietHookRegistry</code>（注册/注销/调用）</li>
+  <li><code>api.type</code> &mdash; 数据类型接口（<code>IDietGroup</code>、<code>IDietResult</code> 等）</li>
+  <li><code>api.util</code> &mdash; 工具记录类（<code>DietColor</code>）</li>
+</ul>
+
+<div class="note">
+  <strong>注册时机：</strong> Hook 应在模组初始化期间注册（例如在 <code>@Mod</code> 构造函数中或 <code>FMLCommonSetupEvent</code> 上）。
+  注册后立即生效，并持续有效直到显式注销。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="quick-start">快速开始</h2>
+
+<p>在模组构造函数中注册一个 Hook：</p>
+
+<div class="example">
+<div class="label">示例 &mdash; 最小化 Hook 注册</div>
+<pre><span class="a">@Mod</span>(<span class="string">"yourmodid"</span>)
+<span class="kw">public class</span> <span class="ty">YourMod</span> {
+    <span class="kw">public</span> <span class="ty">YourMod</span>() {
+        <span class="ty">DietHookRegistry</span>.<span class="m">registerItemFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietItemFoodEatHook</span>() {
+            <span class="a">@Override</span>
+            <span class="kw">public boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+                <span class="kw">return</span> stack.<span class="m">is</span>(<span class="ty">Items</span>.GOLDEN_APPLE);
+            }
+
+            <span class="a">@Override</span>
+            <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+                    <span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack,
+                    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+                originalGains.<span class="m">put</span>(<span class="string">"fruits"</span>, 0.5f);
+                <span class="kw">return</span> originalGains;
+            }
+        });
+    }
+}</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="diet-hook-registry">DietHookRegistry</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.DietHookRegistry</span>
+</p>
+
+<p>
+  所有 Hook 接口的统一注册中心。为每种 Hook 类型提供静态的 <code>register</code>/<code>unregister</code> 方法，
+  并包含内部静态方法供 AppleSeed 核心调用，按注册顺序依次触发所有已注册的 Hook。
+</p>
+
+<table>
+<tr><th>方法</th><th>描述</th></tr>
+<tr><td><code>registerItemFoodEatHook(IDietItemFoodEatHook)</code></td><td>注册物品食物进食 Hook</td></tr>
+<tr><td><code>unregisterItemFoodEatHook(IDietItemFoodEatHook)</code></td><td>注销物品食物进食 Hook</td></tr>
+<tr><td><code>registerBlockFoodEatHook(IDietBlockFoodEatHook)</code></td><td>注册方块食物进食 Hook</td></tr>
+<tr><td><code>unregisterBlockFoodEatHook(IDietBlockFoodEatHook)</code></td><td>注销方块食物进食 Hook</td></tr>
+<tr><td><code>registerRecipeFilterHook(IDietRecipeFilterHook)</code></td><td>注册配方过滤 Hook</td></tr>
+<tr><td><code>unregisterRecipeFilterHook(IDietRecipeFilterHook)</code></td><td>注销配方过滤 Hook</td></tr>
+<tr><td><code>registerTooltipFilterHook(IDietTooltipFilterHook)</code></td><td>注册 Tooltip 过滤 Hook</td></tr>
+<tr><td><code>unregisterTooltipFilterHook(IDietTooltipFilterHook)</code></td><td>注销 Tooltip 过滤 Hook</td></tr>
+<tr><td><code>registerNutritionRuleHook(IDietNutritionRuleHook)</code></td><td>注册营养值规则 Hook</td></tr>
+<tr><td><code>unregisterNutritionRuleHook(IDietNutritionRuleHook)</code></td><td>注销营养值规则 Hook</td></tr>
+</table>
+
+<p>
+  所有 <code>register</code>/<code>unregister</code> 方法均为线程安全，并保持插入顺序。
+  Hook 按注册顺序被调用 &mdash; 最先注册的 Hook 最先执行。
+</p>
+
+<!-- ============================================================ -->
+<h2 id="idietitemfoodeathook">IDietItemFoodEatHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietItemFoodEatHook</span>
+</p>
+
+<p>拦截和覆写物品食物进食检测逻辑。当玩家吃完任何食物物品时触发。</p>
+
+<h3>方法</h3>
+
+<h4>shouldIntercept</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack)</div>
+<div class="desc">
+  决定此 Hook 是否接管指定食物物品的营养值计算。
+  当任一已注册的 Hook 返回 <code>true</code> 时，AppleSeed 将跳过默认的营养值查找，
+  仅使用 <code>modifyNutritionGains</code> 提供的值。
+</div>
+<table>
+<tr><th>参数</th><th>描述</th></tr>
+<tr><td><code>player</code></td><td>正在进食的玩家</td></tr>
+<tr><td><code>stack</code></td><td>正在被食用的食物 ItemStack</td></tr>
+<tr><td><strong>返回</strong></td><td><code>true</code> 拦截并使用自定义营养值；<code>false</code> 使用默认逻辑</td></tr>
+</table>
+
+<h4>modifyNutritionGains</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains)</div>
+<div class="desc">
+  提供或修改营养值增益映射。无论 <code>shouldIntercept</code> 返回何值，此方法始终在默认营养值解析完成后
+  （或拦截后）被调用。
+</div>
+<table>
+<tr><th>参数</th><th>描述</th></tr>
+<tr><td><code>player</code></td><td>正在进食的玩家</td></tr>
+<tr><td><code>stack</code></td><td>正在被食用的食物 ItemStack</td></tr>
+<tr><td><code>originalGains</code></td><td>营养组名称 &rarr; 增益值 的映射（0.0 ~ 1.0）</td></tr>
+<tr><td><strong>返回</strong></td><td>修改后的营养增益映射</td></tr>
+</table>
+
+<h4>onAfterEat</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack)</div>
+<div class="desc">
+  在营养值已应用到玩家之后的回调。用于执行副作用（如发送消息、触发成就等）。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 自定义金苹果营养值</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerItemFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietItemFoodEatHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+        <span class="kw">return</span> stack.<span class="m">is</span>(<span class="ty">Items</span>.GOLDEN_APPLE) || stack.<span class="m">is</span>(<span class="ty">Items</span>.ENCHANTED_GOLDEN_APPLE);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+            <span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+        <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; custom = <span class="kw">new</span> <span class="ty">HashMap</span>&lt;&gt;();
+        custom.<span class="m">put</span>(<span class="string">"fruits"</span>, 0.3f);
+        custom.<span class="m">put</span>(<span class="string">"sugars"</span>, 0.1f);
+        <span class="kw">return</span> custom;
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+        player.<span class="m">sendSystemMessage</span>(
+            <span class="ty">Component</span>.<span class="m">literal</span>(<span class="string">"你感觉更健康了！"</span>));
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietblockfoodeathook">IDietBlockFoodEatHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietBlockFoodEatHook</span>
+</p>
+
+<p>拦截和覆写方块食物（如蛋糕）的进食检测逻辑。</p>
+
+<h3>方法</h3>
+
+<h4>shouldProcessBlock</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldProcessBlock</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">BlockPos</span> pos)</div>
+<div class="desc">
+  决定是否处理方块食物交互。在营养值查找之前调用。
+  所有已注册的 Hook 都必须返回 <code>true</code>（AND 逻辑）才能继续处理。
+</div>
+<table>
+<tr><th>参数</th><th>描述</th></tr>
+<tr><td><code>player</code></td><td>与方块交互的玩家</td></tr>
+<tr><td><code>block</code></td><td>被交互的方块</td></tr>
+<tr><td><code>pos</code></td><td>方块的位置</td></tr>
+<tr><td><strong>返回</strong></td><td><code>true</code> 允许处理；<code>false</code> 取消处理</td></tr>
+</table>
+
+<h4>modifyNutritionGains</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains)</div>
+<div class="desc">
+  修改方块食物每次进食的营养值增益。原始增益值已经按口数分割（例如蛋糕有 7 口）。
+</div>
+
+<h4>onAfterEat</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block)</div>
+<div class="desc">
+  方块食物营养值应用后的回调。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 生日时蛋糕营养值翻倍</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerBlockFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietBlockFoodEatHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldProcessBlock</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">BlockPos</span> pos) {
+        <span class="kw">return true</span>; <span class="c">// 始终允许</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+            <span class="ty">Player</span> player, <span class="ty">Block</span> block,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+        <span class="c">// 在玩家生日时双倍增益</span>
+        <span class="kw">if</span> (isBirthday(player)) {
+            originalGains.<span class="m">replaceAll</span>((k, v) -> v * 2.0f);
+        }
+        <span class="kw">return</span> originalGains;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietrecipefilterhook">IDietRecipeFilterHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietRecipeFilterHook</span>
+</p>
+
+<p>控制哪些配方和物品参与自动营养值计算系统。</p>
+
+<h3>方法</h3>
+
+<h4>isValidRecipeType</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">isValidRecipeType</span>(<span class="ty">Recipe</span>&lt;?&gt; recipe)</div>
+<div class="desc">
+  过滤在自动营养值计算中考虑的配方类型。
+  默认有效类型：<code>CraftingRecipe</code>、<code>SmeltingRecipe</code>、<code>SmokingRecipe</code>、
+  <code>CampfireCookingRecipe</code>、<code>SimulateRecipe</code>，以及 Create/Farmer's Delight 配方。
+  所有 Hook 必须返回 <code>true</code>（AND 逻辑）配方才会被包含。
+</div>
+
+<h4>shouldProcessItem</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldProcessItem</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  过滤哪些食物物品被包含在自动计算集合中。
+  所有 Hook 必须返回 <code>true</code>（AND 逻辑）物品才会被处理。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 排除特定模组的配方</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerRecipeFilterHook</span>(<span class="kw">new</span> <span class="ty">IDietRecipeFilterHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">isValidRecipeType</span>(<span class="ty">Recipe</span>&lt;?&gt; recipe) {
+        <span class="c">// 排除所有 Mekanism 配方</span>
+        <span class="kw">return</span> !recipe.<span class="m">getClass</span>().<span class="m">getName</span>().<span class="m">contains</span>(<span class="string">"mekanism"</span>);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldProcessItem</span>(<span class="ty">Item</span> item) {
+        <span class="c">// 排除毒马铃薯</span>
+        <span class="kw">return</span> item != <span class="ty">Items</span>.POISONOUS_POTATO;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idiettooltipfilterhook">IDietTooltipFilterHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietTooltipFilterHook</span>
+</p>
+
+<p>控制哪些物品显示营养值 Tooltip 以及显示什么内容。</p>
+
+<h3>方法</h3>
+
+<h4>shouldShowTooltip</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldShowTooltip</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player)</div>
+<div class="desc">
+  决定是否为此物品显示营养值 Tooltip。
+  所有 Hook 必须返回 <code>true</code>（AND 逻辑）Tooltip 才会显示。
+</div>
+
+<h4>modifyTooltipNutrition</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyTooltipNutrition</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalNutritions)</div>
+<div class="desc">
+  修改 Tooltip 中显示的营养值。用于隐藏特定组别、调整显示值或添加自定义信息。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 隐藏未鉴定物品的 Tooltip</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerTooltipFilterHook</span>(<span class="kw">new</span> <span class="ty">IDietTooltipFilterHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldShowTooltip</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player) {
+        <span class="c">// 隐藏带有自定义 NBT 标签的物品的营养信息</span>
+        <span class="kw">return</span> !stack.<span class="m">hasTag</span>() || !stack.<span class="m">getTag</span>().<span class="m">contains</span>(<span class="string">"hidden_nutrition"</span>);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyTooltipNutrition</span>(
+            <span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalNutritions) {
+        <span class="c">// 移除负数营养组别的显示</span>
+        originalNutritions.<span class="m">entrySet</span>().<span class="m">removeIf</span>(e -> e.<span class="m">getValue</span>() &lt; 0);
+        <span class="kw">return</span> originalNutritions;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietnutritionrulehook">IDietNutritionRuleHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietNutritionRuleHook</span>
+</p>
+
+<p>在最细粒度的层面覆写营养值的增加/设置/衰减规则。这些 Hook 在值实际写入玩家数据<em>之前</em>被调用。</p>
+
+<h3>方法</h3>
+
+<h4>onBeforeAdd</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeAdd</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">
+  在营养值被增加（累加）之前调用。返回的值将替换原始值。
+  正向增益（进食）和负向增益（饥饿/攻击衰减）均会触发此方法。
+</div>
+
+<h4>onBeforeSet</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeSet</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">
+  在营养值被直接设置（覆盖）之前调用。返回的值将替换原始值。
+  最终值始终会被钳制在 <code>[0.0, 1.0]</code> 区间内。
+</div>
+
+<h4>onBeforeDecay</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeDecay</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> decay)</div>
+<div class="desc">
+  在衰减被应用之前调用（饥饿损失或受到伤害）。返回的衰减值将替换原始值。
+  返回 <code>0</code> 可完全阻止衰减。
+</div>
+
+<h4>onAfterChange</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterChange</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> oldValue, <span class="kw">float</span> newValue)</div>
+<div class="desc">
+  营养值变化后的回调。仅在值实际发生变化时调用（oldValue &ne; newValue）。
+</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 老玩家更慢的营养衰减</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerNutritionRuleHook</span>(<span class="kw">new</span> <span class="ty">IDietNutritionRuleHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeAdd</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value) {
+        <span class="kw">return</span> value; <span class="c">// 不变</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeSet</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value) {
+        <span class="kw">return</span> value; <span class="c">// 不变</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeDecay</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> decay) {
+        <span class="c">// 游戏时长超过 100 小时的玩家衰减速度减半</span>
+        <span class="kw">if</span> (player.<span class="m">getStats</span>().<span class="m">getValue</span>(<span class="ty">Stats</span>.PLAY_TIME) > 7200000) {
+            <span class="kw">return</span> decay * 0.5f;
+        }
+        <span class="kw">return</span> decay;
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public void</span> <span class="m">onAfterChange</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group,
+                                   <span class="kw">float</span> oldValue, <span class="kw">float</span> newValue) {
+        <span class="c">// 当某组营养值达到 100% 时通知玩家</span>
+        <span class="kw">if</span> (newValue >= 1.0f && oldValue &lt; 1.0f) {
+            player.<span class="m">sendSystemMessage</span>(
+                <span class="ty">Component</span>.<span class="m">literal</span>(<span class="string">"营养组 "</span> + group + <span class="string">" 已达到最大值！"</span>));
+        }
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietresult">IDietResult</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietResult</span>
+  &nbsp; <span class="tag">@FunctionalInterface</span>
+</p>
+
+<p>营养结果的不变表示 &mdash; 从营养组到浮点数值的映射。</p>
+
+<h3>常量</h3>
+<div class="sig"><span class="ty">IDietResult</span> EMPTY = <span class="ty">Map</span>::of</div>
+
+<h3>抽象方法</h3>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">IDietGroup</span>, <span class="ty">Float</span>&gt; <span class="m">get</span>()</div>
+
+<h3>默认方法</h3>
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">merge</span>(<span class="ty">IDietResult</span> other)</div>
+<div class="desc">将另一个结果合并到当前结果中，重叠组的值会求和。返回新实例。</div>
+
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">add</span>(<span class="ty">IDietGroup</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">添加单个组-值对。返回新实例。</div>
+
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">scale</span>(<span class="kw">float</span> multiplier)</div>
+<div class="desc">将所有值乘以指定倍数。返回新实例。</div>
+
+<div class="sig"><span class="kw">default boolean</span> <span class="m">isEmpty</span>()</div>
+<div class="desc">如果没有营养条目则返回 <code>true</code>。</div>
+
+<div class="sig"><span class="kw">default float</span> <span class="m">getValue</span>(<span class="ty">IDietGroup</span> group)</div>
+<div class="desc">返回指定组的值，若不存在则返回 <code>0.0f</code>。</div>
+
+<div class="example">
+<div class="label">示例 &mdash; 组合多个结果</div>
+<pre><span class="ty">IDietResult</span> base = <span class="ty">Map</span>::of; <span class="c">// EMPTY</span>
+<span class="ty">IDietResult</span> withFruit = base.<span class="m">add</span>(fruitGroup, 0.3f);
+<span class="ty">IDietResult</span> combined = withFruit.<span class="m">merge</span>(otherResult);
+<span class="ty">IDietResult</span> doubled = combined.<span class="m">scale</span>(2.0f);
+
+<span class="kw">if</span> (!doubled.<span class="m">isEmpty</span>()) {
+    <span class="kw">float</span> fruitVal = doubled.<span class="m">getValue</span>(fruitGroup);
+}</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietgroup">IDietGroup</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietGroup</span>
+</p>
+
+<p>表示单个营养组（例如 "fruits"、"proteins"、"grains"）。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getName()</code></td><td><code>String</code></td><td>唯一组标识符</td></tr>
+<tr><td><code>getIcon()</code></td><td><code>Item</code></td><td>UI 中显示的代表性物品</td></tr>
+<tr><td><code>getColor()</code></td><td><code>DietColor</code></td><td>显示颜色（RGBA）</td></tr>
+<tr><td><code>getDefaultValue()</code></td><td><code>float</code></td><td>新玩家的默认营养值</td></tr>
+<tr><td><code>getOrder()</code></td><td><code>int</code></td><td>UI 中的排序顺序（越小越靠前）</td></tr>
+<tr><td><code>getGainMultiplier()</code></td><td><code>double</code></td><td>应用于所有增益的乘数（进食）</td></tr>
+<tr><td><code>getDecayMultiplier()</code></td><td><code>double</code></td><td>应用于所有衰减的乘数（饥饿/伤害）</td></tr>
+<tr><td><code>isBeneficial()</code></td><td><code>boolean</code></td><td>高值是否有益</td></tr>
+<tr><td><code>getTag()</code></td><td><code>TagKey&lt;Item&gt;</code></td><td>与此组关联的物品标签</td></tr>
+<tr><td><code>getTranslationKey()</code></td><td><code>String</code></td><td>显示名称的本地化键</td></tr>
+<tr><td><code>isNegative()</code></td><td><code>boolean</code></td><td>此组是否代表负面效果</td></tr>
+<tr><td><code>ignoreAttack()</code></td><td><code>boolean</code></td><td>受到伤害时跳过衰减</td></tr>
+<tr><td><code>ignoreHunger()</code></td><td><code>boolean</code></td><td>饥饿损失时跳过衰减</td></tr>
+<tr><td><code>contains(ItemStack)</code></td><td><code>boolean</code></td><td>检查物品是否属于此组的标签</td></tr>
+<tr><td><code>save()</code></td><td><code>CompoundTag</code></td><td>序列化为 NBT 用于网络同步</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietsuite">IDietSuite</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietSuite</span>
+</p>
+
+<p>套件将多个营养组与关联的效果组合在一起。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getName()</code></td><td><code>String</code></td><td>套件标识符</td></tr>
+<tr><td><code>getGroups()</code></td><td><code>Set&lt;IDietGroup&gt;</code></td><td>此套件中的营养组</td></tr>
+<tr><td><code>getEffects()</code></td><td><code>List&lt;IDietEffect&gt;</code></td><td>由营养阈值触发的效果</td></tr>
+<tr><td><code>save()</code></td><td><code>CompoundTag</code></td><td>序列化为 NBT</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idieteffect">IDietEffect</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietEffect</span>
+</p>
+
+<p>定义一组条件、属性和状态效果，当营养阈值满足时激活。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getConditions()</code></td><td><code>List&lt;IDietCondition&gt;</code></td><td>必须全部满足的条件</td></tr>
+<tr><td><code>getAttributes()</code></td><td><code>List&lt;IDietAttribute&gt;</code></td><td>要应用的属性修饰器</td></tr>
+<tr><td><code>getStatusEffects()</code></td><td><code>List&lt;IDietStatusEffect&gt;</code></td><td>要应用的状态效果</td></tr>
+<tr><td><code>getUuid()</code></td><td><code>UUID</code></td><td>此效果的唯一标识符</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietcondition">IDietCondition</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietCondition</span>
+</p>
+
+<p>检查营养组值是否在指定范围内的单个条件。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getGroup()</code></td><td><code>String</code></td><td>要检查的营养组名称</td></tr>
+<tr><td><code>getMin()</code></td><td><code>float</code></td><td>最小阈值（含）</td></tr>
+<tr><td><code>getMax()</code></td><td><code>float</code></td><td>最大阈值（含）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietattribute">IDietAttribute</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietAttribute</span>
+</p>
+
+<p>当营养条件满足时应用的属性修饰器。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getAttribute()</code></td><td><code>String</code></td><td>属性注册名</td></tr>
+<tr><td><code>getAmount()</code></td><td><code>double</code></td><td>修饰器数值</td></tr>
+<tr><td><code>getOperation()</code></td><td><code>AttributeModifier.Operation</code></td><td>修饰器运算方式（ADD_VALUE、MULTIPLY_BASE、MULTIPLY_TOTAL）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietstatuseffect">IDietStatusEffect</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietStatusEffect</span>
+</p>
+
+<p>当营养条件满足时应用的状态效果。</p>
+
+<table>
+<tr><th>方法</th><th>返回</th><th>描述</th></tr>
+<tr><td><code>getEffect()</code></td><td><code>String</code></td><td>MobEffect 注册名</td></tr>
+<tr><td><code>getAmplifier()</code></td><td><code>int</code></td><td>效果增幅等级（从 0 开始）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="dietcolor">DietColor</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.util.DietColor</span>
+  &nbsp; <span class="tag">record</span>
+</p>
+
+<p>不可变的 RGBA 颜色记录类，用于整个营养 UI 系统。</p>
+
+<div class="sig"><span class="kw">public record</span> <span class="ty">DietColor</span>(<span class="kw">int</span> r, <span class="kw">int</span> g, <span class="kw">int</span> b, <span class="kw">int</span> a)</div>
+
+<h3>静态工厂方法</h3>
+<div class="sig"><span class="kw">static</span> <span class="ty">DietColor</span> <span class="m">fromInt</span>(<span class="kw">int</span> color)</div>
+<div class="desc">从 ARGB 打包整数创建 DietColor（例如 <code>0xFFFF0000</code>）。</div>
+
+<div class="sig"><span class="kw">static</span> <span class="ty">DietColor</span> <span class="m">fromHex</span>(<span class="ty">String</span> hex)</div>
+<div class="desc">从十六进制字符串创建 DietColor（<code>"#RRGGBB"</code> 或 <code>"#AARRGGBB"</code>）。</div>
+
+<h3>实例方法</h3>
+<div class="sig"><span class="kw">int</span> <span class="m">toInt</span>()</div>
+<div class="desc">转换为 ARGB 打包整数。</div>
+
+<div class="example">
+<div class="label">示例</div>
+<pre><span class="ty">DietColor</span> red = <span class="ty">DietColor</span>.<span class="m">fromInt</span>(0xFFFF0000);
+<span class="ty">DietColor</span> blue = <span class="ty">DietColor</span>.<span class="m">fromHex</span>(<span class="string">"#0000FF"</span>);
+<span class="ty">DietColor</span> custom = <span class="kw">new</span> <span class="ty">DietColor</span>(255, 128, 0, 255);
+<span class="kw">int</span> packed = custom.<span class="m">toInt</span>();</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="flow-sheet">执行流程</h2>
+
+<p>Hook API 如何集成到 AppleSeed 核心系统中：</p>
+
+<h3>物品食物进食</h3>
+<div class="flow-diagram">玩家吃完食物物品
+  |
+  +--&gt; <strong>DietHookRegistry.shouldInterceptItemFood()</strong>
+  |       调用所有 IDietItemFoodEatHook.shouldIntercept()
+  |       若任一返回 true &rarr; 跳过默认查找
+  |
+  +--&gt; 默认营养值查找（或使用拦截后的自定义增益）
+  |
+  +--&gt; <strong>DietHookRegistry.modifyItemFoodGains()</strong>
+  |       按顺序调用所有 IDietItemFoodEatHook.modifyNutritionGains()
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeAdd()</strong>
+  |       调用所有 IDietNutritionRuleHook.onBeforeAdd()
+  |
+  +--&gt; DietData.addValue() &rarr; 钳制到 [0.0, 1.0]
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+  |       调用所有 IDietNutritionRuleHook.onAfterChange()
+  |
+  +--&gt; <strong>DietHookRegistry.onAfterItemFoodEat()</strong>
+          调用所有 IDietItemFoodEatHook.onAfterEat()</div>
+
+<h3>营养衰减（饥饿 / 伤害）</h3>
+<div class="flow-diagram">饥饿损失或受到伤害
+  |
+  +--&gt; 计算基础衰减（饥饿：损失 * 0.005，伤害：0.001）
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeDecay()</strong>
+  |       调用所有 IDietNutritionRuleHook.onBeforeDecay()
+  |       返回值 &times; 组衰减乘数
+  |
+  +--&gt; DietData.addValue(player, group, -decay)
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+          调用所有 IDietNutritionRuleHook.onAfterChange()</div>
+
+<h3>方块食物进食</h3>
+<div class="flow-diagram">玩家右键点击食物方块
+  |
+  +--&gt; 检查 #appleseed:food_blocks 标签
+  |
+  +--&gt; <strong>DietHookRegistry.shouldProcessBlockFood()</strong>
+  |       调用所有 IDietBlockFoodEatHook.shouldProcessBlock()（AND 逻辑）
+  |
+  +--&gt; 查找方块营养数据，按口数分割
+  |
+  +--&gt; <strong>DietHookRegistry.modifyBlockFoodGains()</strong>
+  |       调用所有 IDietBlockFoodEatHook.modifyNutritionGains()
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeAdd()</strong>
+  |
+  +--&gt; 对每个组调用 DietData.addValue()
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+  |
+  +--&gt; <strong>DietHookRegistry.onAfterBlockFoodEat()</strong></div>
+
+<h3>Tooltip 显示</h3>
+<div class="flow-diagram">ItemTooltipEvent 触发
+  |
+  +--&gt; 检查食物属性或 food_blocks 标签
+  |
+  +--&gt; <strong>DietHookRegistry.shouldShowTooltip()</strong>
+  |       调用所有 IDietTooltipFilterHook.shouldShowTooltip()（AND 逻辑）
+  |
+  +--&gt; 获取营养数据（来自 SandwichCompat 或 FoodNutritionManager）
+  |
+  +--&gt; <strong>DietHookRegistry.modifyTooltipNutrition()</strong>
+  |       调用所有 IDietTooltipFilterHook.modifyTooltipNutrition()
+  |
+  +--&gt; 渲染 Tooltip 行</div>
+
+<h3>自动计算</h3>
+<div class="flow-diagram">服务器数据包同步 / 重载
+  |
+  +--&gt; 从 RecipeManager 收集所有配方
+  |
+  +--&gt; <strong>DietHookRegistry.isValidRecipeType()</strong>
+  |       调用所有 IDietRecipeFilterHook.isValidRecipeType()（AND 逻辑）
+  |       附加硬编码类型检查（Crafting、Smelting 等）
+  |
+  +--&gt; <strong>DietHookRegistry.shouldProcessItem()</strong>
+  |       调用所有 IDietRecipeFilterHook.shouldProcessItem()（AND 逻辑）
+  |
+  +--&gt; 对每个食物物品进行递归配方分析
+  |
+  +--&gt; 保存计算结果到配置文件</div>
+
+<!-- ============================================================ -->
+<h2 id="package-structure">包结构</h2>
+
+<div class="sig" style="line-height:2.2;">
+<span class="c">// Hook API &mdash; 注册和拦截营养行为</span>
+<span class="ty">net.appleseed.appleseed.api.hook</span>
+  <span class="a">├──</span> <span class="ty">DietHookRegistry</span>        <span class="c">// 统一注册中心（静态方法）</span>
+  <span class="a">├──</span> <span class="ty">IDietItemFoodEatHook</span>     <span class="c">// 物品食物进食 Hook</span>
+  <span class="a">├──</span> <span class="ty">IDietBlockFoodEatHook</span>    <span class="c">// 方块食物进食 Hook</span>
+  <span class="a">├──</span> <span class="ty">IDietRecipeFilterHook</span>    <span class="c">// 配方/物品过滤 Hook</span>
+  <span class="a">├──</span> <span class="ty">IDietTooltipFilterHook</span>   <span class="c">// Tooltip 显示 Hook</span>
+  <span class="a">└──</span> <span class="ty">IDietNutritionRuleHook</span>   <span class="c">// 营养值增减/衰减 Hook</span>
+
+<span class="c">// Type API &mdash; 数据模型接口</span>
+<span class="ty">net.appleseed.appleseed.api.type</span>
+  <span class="a">├──</span> <span class="ty">IDietResult</span>              <span class="c">// 不可变营养结果映射</span>
+  <span class="a">├──</span> <span class="ty">IDietGroup</span>               <span class="c">// 营养组定义</span>
+  <span class="a">├──</span> <span class="ty">IDietSuite</span>               <span class="c">// 带效果的组套件</span>
+  <span class="a">├──</span> <span class="ty">IDietEffect</span>              <span class="c">// 效果组合（条件 + 属性 + 状态）</span>
+  <span class="a">├──</span> <span class="ty">IDietCondition</span>           <span class="c">// 营养阈值条件</span>
+  <span class="a">├──</span> <span class="ty">IDietAttribute</span>           <span class="c">// 属性修饰器</span>
+  <span class="a">└──</span> <span class="ty">IDietStatusEffect</span>        <span class="c">// 状态效果定义</span>
+
+<span class="c">// 工具 API</span>
+<span class="ty">net.appleseed.appleseed.api.util</span>
+  <span class="a">└──</span> <span class="ty">DietColor</span>                <span class="c">// RGBA 颜色记录类</span>
+</div>
+
+</main>
+</body>
+</html>

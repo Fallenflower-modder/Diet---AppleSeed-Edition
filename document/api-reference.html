@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppleSeed API Reference</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --text: #e0e0e0;
+    --text2: #a0a0b0;
+    --code-bg: #0d1117;
+    --border: #2a2a4a;
+    --keyword: #ff79c6;
+    --type: #8be9fd;
+    --string: #f1fa8c;
+    --comment: #6272a4;
+    --method: #50fa7b;
+    --annotation: #bd93f9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px;
+    z-index: 10;
+  }
+  .sidebar h1 {
+    font-size: 1.3em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .sidebar .version {
+    font-size: 0.8em;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .sidebar nav a {
+    display: block;
+    color: var(--text);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    transition: background 0.15s;
+  }
+  .sidebar nav a:hover { background: var(--surface2); color: var(--accent); }
+  .sidebar nav .category {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin: 16px 0 6px 0;
+    letter-spacing: 1px;
+  }
+  .main {
+    margin-left: 280px;
+    padding: 40px 50px;
+    max-width: 1100px;
+  }
+  h2 {
+    font-size: 1.8em;
+    color: var(--accent);
+    margin: 40px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 {
+    font-size: 1.3em;
+    color: var(--type);
+    margin: 28px 0 10px 0;
+  }
+  h4 {
+    font-size: 1.05em;
+    color: var(--method);
+    margin: 18px 0 6px 0;
+  }
+  p, li { margin: 6px 0; font-size: 0.95em; }
+  ul { padding-left: 24px; }
+  .sig {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 10px 0;
+    font-size: 0.88em;
+    overflow-x: auto;
+  }
+  .sig .kw { color: var(--keyword); }
+  .sig .ty { color: var(--type); }
+  .sig .m { color: var(--method); }
+  .sig .a { color: var(--annotation); }
+  .sig .c { color: var(--comment); }
+  .desc {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 10px 16px;
+    margin: 8px 0 16px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9em;
+  }
+  .example {
+    margin: 16px 0 24px 0;
+  }
+  .example .label {
+    font-size: 0.8em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .example pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px 0;
+    font-size: 0.9em;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tag {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--type);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.78em;
+    font-family: monospace;
+  }
+  .note {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.9em;
+  }
+  .note strong { color: var(--accent); }
+  code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+  }
+  a { color: var(--type); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 0.85em;
+    line-height: 2;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <h1>AppleSeed API</h1>
+  <div class="version">NeoForge 1.21.1 &nbsp;|&nbsp; Mod ID: <code>appleseed</code></div>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#quick-start">Quick Start</a>
+
+    <div class="category">Hook API</div>
+    <a href="#diet-hook-registry">DietHookRegistry</a>
+    <a href="#idietitemfoodeathook">IDietItemFoodEatHook</a>
+    <a href="#idietblockfoodeathook">IDietBlockFoodEatHook</a>
+    <a href="#idietrecipefilterhook">IDietRecipeFilterHook</a>
+    <a href="#idiettooltipfilterhook">IDietTooltipFilterHook</a>
+    <a href="#idietnutritionrulehook">IDietNutritionRuleHook</a>
+
+    <div class="category">Type API</div>
+    <a href="#idietresult">IDietResult</a>
+    <a href="#idietgroup">IDietGroup</a>
+    <a href="#idietsuite">IDietSuite</a>
+    <a href="#idieteffect">IDietEffect</a>
+    <a href="#idietcondition">IDietCondition</a>
+    <a href="#idietattribute">IDietAttribute</a>
+    <a href="#idietstatuseffect">IDietStatusEffect</a>
+
+    <div class="category">Utility</div>
+    <a href="#dietcolor">DietColor</a>
+
+    <div class="category">Appendix</div>
+    <a href="#flow-sheet">Execution Flow</a>
+    <a href="#package-structure">Package Structure</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+<!-- ============================================================ -->
+<h2 id="overview">Overview</h2>
+
+<p>
+  AppleSeed provides a comprehensive <strong>Hook API</strong> that allows other mods to intercept and override
+  core nutrition system behaviors at runtime. Combined with the <strong>Type API</strong> for data modeling,
+  external mods can fully customize food detection, recipe filtering, tooltip rendering, and nutrition value rules.
+</p>
+
+<p>All API classes reside under the <code>net.appleseed.appleseed.api</code> package:</p>
+<ul>
+  <li><code>api.hook</code> &mdash; Hook interfaces + <code>DietHookRegistry</code> (register/unregister/call)</li>
+  <li><code>api.type</code> &mdash; Data type interfaces (<code>IDietGroup</code>, <code>IDietResult</code>, etc.)</li>
+  <li><code>api.util</code> &mdash; Utility records (<code>DietColor</code>)</li>
+</ul>
+
+<div class="note">
+  <strong>Registration Timing:</strong> Hooks should be registered during mod initialization
+  (e.g., in your <code>@Mod</code> constructor or on the <code>FMLCommonSetupEvent</code>).
+  Hooks take effect immediately and persist until explicitly unregistered.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="quick-start">Quick Start</h2>
+
+<p>Register a hook in your mod's constructor:</p>
+
+<div class="example">
+<div class="label">Example &mdash; Minimal Hook Registration</div>
+<pre><span class="a">@Mod</span>(<span class="string">"yourmodid"</span>)
+<span class="kw">public class</span> <span class="ty">YourMod</span> {
+    <span class="kw">public</span> <span class="ty">YourMod</span>() {
+        <span class="ty">DietHookRegistry</span>.<span class="m">registerItemFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietItemFoodEatHook</span>() {
+            <span class="a">@Override</span>
+            <span class="kw">public boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+                <span class="kw">return</span> stack.<span class="m">is</span>(<span class="ty">Items</span>.GOLDEN_APPLE);
+            }
+
+            <span class="a">@Override</span>
+            <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+                    <span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack,
+                    <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+                originalGains.<span class="m">put</span>(<span class="string">"fruits"</span>, 0.5f);
+                <span class="kw">return</span> originalGains;
+            }
+        });
+    }
+}</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="diet-hook-registry">DietHookRegistry</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.DietHookRegistry</span>
+</p>
+
+<p>
+  Central registry for all Hook interfaces. Provides static <code>register</code>/<code>unregister</code> methods
+  for each Hook type, and internal <code>static</code> methods that the AppleSeed core calls to invoke
+  all registered hooks in order.
+</p>
+
+<table>
+<tr><th>Method</th><th>Description</th></tr>
+<tr><td><code>registerItemFoodEatHook(IDietItemFoodEatHook)</code></td><td>Register an item food eat hook</td></tr>
+<tr><td><code>unregisterItemFoodEatHook(IDietItemFoodEatHook)</code></td><td>Unregister an item food eat hook</td></tr>
+<tr><td><code>registerBlockFoodEatHook(IDietBlockFoodEatHook)</code></td><td>Register a block food eat hook</td></tr>
+<tr><td><code>unregisterBlockFoodEatHook(IDietBlockFoodEatHook)</code></td><td>Unregister a block food eat hook</td></tr>
+<tr><td><code>registerRecipeFilterHook(IDietRecipeFilterHook)</code></td><td>Register a recipe filter hook</td></tr>
+<tr><td><code>unregisterRecipeFilterHook(IDietRecipeFilterHook)</code></td><td>Unregister a recipe filter hook</td></tr>
+<tr><td><code>registerTooltipFilterHook(IDietTooltipFilterHook)</code></td><td>Register a tooltip filter hook</td></tr>
+<tr><td><code>unregisterTooltipFilterHook(IDietTooltipFilterHook)</code></td><td>Unregister a tooltip filter hook</td></tr>
+<tr><td><code>registerNutritionRuleHook(IDietNutritionRuleHook)</code></td><td>Register a nutrition rule hook</td></tr>
+<tr><td><code>unregisterNutritionRuleHook(IDietNutritionRuleHook)</code></td><td>Unregister a nutrition rule hook</td></tr>
+</table>
+
+<p>
+  All <code>register</code>/<code>unregister</code> methods are thread-safe and maintain insertion order.
+  Hooks are invoked in registration order &mdash; the first registered hook runs first.
+</p>
+
+<!-- ============================================================ -->
+<h2 id="idietitemfoodeathook">IDietItemFoodEatHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietItemFoodEatHook</span>
+</p>
+
+<p>Intercept and override item food eating detection logic. Called when a player finishes eating any food item.</p>
+
+<h3>Methods</h3>
+
+<h4>shouldIntercept</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack)</div>
+<div class="desc">
+  Determines whether this hook should take over nutrition calculation for the given food item.
+  When any registered hook returns <code>true</code>, AppleSeed skips its default nutrition lookup
+  and uses <code>modifyNutritionGains</code> exclusively.
+</div>
+<table>
+<tr><th>Parameter</th><th>Description</th></tr>
+<tr><td><code>player</code></td><td>The player who is eating</td></tr>
+<tr><td><code>stack</code></td><td>The food ItemStack being consumed</td></tr>
+<tr><td><strong>Returns</strong></td><td><code>true</code> to intercept and use custom nutrition; <code>false</code> to use default logic</td></tr>
+</table>
+
+<h4>modifyNutritionGains</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains)</div>
+<div class="desc">
+  Provides or modifies the nutrition gain map. Called regardless of whether <code>shouldIntercept</code>
+  returned <code>true</code> &mdash; it is always invoked after the default nutrition values are resolved
+  (or after interception).
+</div>
+<table>
+<tr><th>Parameter</th><th>Description</th></tr>
+<tr><td><code>player</code></td><td>The player who is eating</td></tr>
+<tr><td><code>stack</code></td><td>The food ItemStack being consumed</td></tr>
+<tr><td><code>originalGains</code></td><td>Map of nutrition group name &rarr; gain value (0.0 ~ 1.0)</td></tr>
+<tr><td><strong>Returns</strong></td><td>Modified nutrition gain map</td></tr>
+</table>
+
+<h4>onAfterEat</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack)</div>
+<div class="desc">
+  Callback invoked after nutrition values have been applied to the player. Use for side effects
+  (e.g., sending messages, triggering achievements).
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Custom Golden Apple Nutrition</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerItemFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietItemFoodEatHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldIntercept</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+        <span class="kw">return</span> stack.<span class="m">is</span>(<span class="ty">Items</span>.GOLDEN_APPLE) || stack.<span class="m">is</span>(<span class="ty">Items</span>.ENCHANTED_GOLDEN_APPLE);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+            <span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+        <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; custom = <span class="kw">new</span> <span class="ty">HashMap</span>&lt;&gt;();
+        custom.<span class="m">put</span>(<span class="string">"fruits"</span>, 0.3f);
+        custom.<span class="m">put</span>(<span class="string">"sugars"</span>, 0.1f);
+        <span class="kw">return</span> custom;
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">ItemStack</span> stack) {
+        player.<span class="m">sendSystemMessage</span>(
+            <span class="ty">Component</span>.<span class="m">literal</span>(<span class="string">"You feel healthier!"</span>));
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietblockfoodeathook">IDietBlockFoodEatHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietBlockFoodEatHook</span>
+</p>
+
+<p>Intercept and override block food (e.g., cake) eating detection logic.</p>
+
+<h3>Methods</h3>
+
+<h4>shouldProcessBlock</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldProcessBlock</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">BlockPos</span> pos)</div>
+<div class="desc">
+  Determines whether the block food interaction should be processed.
+  Called before nutrition lookup. All registered hooks must return <code>true</code>
+  for processing to continue (AND logic).
+</div>
+<table>
+<tr><th>Parameter</th><th>Description</th></tr>
+<tr><td><code>player</code></td><td>The player interacting with the block</td></tr>
+<tr><td><code>block</code></td><td>The block being interacted with</td></tr>
+<tr><td><code>pos</code></td><td>Position of the block</td></tr>
+<tr><td><strong>Returns</strong></td><td><code>true</code> to allow processing; <code>false</code> to cancel</td></tr>
+</table>
+
+<h4>modifyNutritionGains</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains)</div>
+<div class="desc">
+  Modifies the per-bite nutrition gains for block food. The original gains are already divided
+  by the number of bites (e.g., cake has 7 bites).
+</div>
+
+<h4>onAfterEat</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterEat</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block)</div>
+<div class="desc">
+  Callback after block food nutrition has been applied.
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Double Cake Nutrition on Birthdays</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerBlockFoodEatHook</span>(<span class="kw">new</span> <span class="ty">IDietBlockFoodEatHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldProcessBlock</span>(<span class="ty">Player</span> player, <span class="ty">Block</span> block, <span class="ty">BlockPos</span> pos) {
+        <span class="kw">return true</span>; <span class="c">// always allow</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyNutritionGains</span>(
+            <span class="ty">Player</span> player, <span class="ty">Block</span> block,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalGains) {
+        <span class="c">// Double gains on player's birthday</span>
+        <span class="kw">if</span> (isBirthday(player)) {
+            originalGains.<span class="m">replaceAll</span>((k, v) -> v * 2.0f);
+        }
+        <span class="kw">return</span> originalGains;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietrecipefilterhook">IDietRecipeFilterHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietRecipeFilterHook</span>
+</p>
+
+<p>Control which recipes and items participate in the automatic nutrition calculation system.</p>
+
+<h3>Methods</h3>
+
+<h4>isValidRecipeType</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">isValidRecipeType</span>(<span class="ty">Recipe</span>&lt;?&gt; recipe)</div>
+<div class="desc">
+  Filters which recipe types are considered during automatic nutrition calculation.
+  Default valid types: <code>CraftingRecipe</code>, <code>SmeltingRecipe</code>, <code>SmokingRecipe</code>,
+  <code>CampfireCookingRecipe</code>, <code>SimulateRecipe</code>, and Create/Farmer's Delight recipes.
+  All hooks must return <code>true</code> (AND logic) for a recipe to be included.
+</div>
+
+<h4>shouldProcessItem</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldProcessItem</span>(<span class="ty">Item</span> item)</div>
+<div class="desc">
+  Filters which food items are included in the automatic calculation set.
+  All hooks must return <code>true</code> (AND logic) for an item to be processed.
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Exclude Specific Mod's Recipes</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerRecipeFilterHook</span>(<span class="kw">new</span> <span class="ty">IDietRecipeFilterHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">isValidRecipeType</span>(<span class="ty">Recipe</span>&lt;?&gt; recipe) {
+        <span class="c">// Exclude all Mekanism recipes from auto-calculation</span>
+        <span class="kw">return</span> !recipe.<span class="m">getClass</span>().<span class="m">getName</span>().<span class="m">contains</span>(<span class="string">"mekanism"</span>);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldProcessItem</span>(<span class="ty">Item</span> item) {
+        <span class="c">// Exclude poisonous potatoes from calculation</span>
+        <span class="kw">return</span> item != <span class="ty">Items</span>.POISONOUS_POTATO;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idiettooltipfilterhook">IDietTooltipFilterHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietTooltipFilterHook</span>
+</p>
+
+<p>Control which items display nutrition tooltips and what values they show.</p>
+
+<h3>Methods</h3>
+
+<h4>shouldShowTooltip</h4>
+<div class="sig"><span class="kw">boolean</span> <span class="m">shouldShowTooltip</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player)</div>
+<div class="desc">
+  Determines whether the nutrition tooltip should be displayed for this item.
+  All hooks must return <code>true</code> (AND logic) for the tooltip to appear.
+</div>
+
+<h4>modifyTooltipNutrition</h4>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyTooltipNutrition</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player, <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalNutritions)</div>
+<div class="desc">
+  Modifies the nutrition values shown in the tooltip. Use this to hide certain groups,
+  adjust display values, or add custom information.
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Hide Tooltip for Unidentified Items</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerTooltipFilterHook</span>(<span class="kw">new</span> <span class="ty">IDietTooltipFilterHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public boolean</span> <span class="m">shouldShowTooltip</span>(<span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player) {
+        <span class="c">// Hide nutrition info for items with custom NBT</span>
+        <span class="kw">return</span> !stack.<span class="m">hasTag</span>() || !stack.<span class="m">getTag</span>().<span class="m">contains</span>(<span class="string">"hidden_nutrition"</span>);
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; <span class="m">modifyTooltipNutrition</span>(
+            <span class="ty">ItemStack</span> stack, <span class="ty">Player</span> player,
+            <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">Float</span>&gt; originalNutritions) {
+        <span class="c">// Remove negative nutrition groups from display</span>
+        originalNutritions.<span class="m">entrySet</span>().<span class="m">removeIf</span>(e -> e.<span class="m">getValue</span>() &lt; 0);
+        <span class="kw">return</span> originalNutritions;
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietnutritionrulehook">IDietNutritionRuleHook</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.hook.IDietNutritionRuleHook</span>
+</p>
+
+<p>Override nutrition value add/set/decay rules at the most granular level. These hooks are called
+  <em>before</em> the value is actually written to the player's data.</p>
+
+<h3>Methods</h3>
+
+<h4>onBeforeAdd</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeAdd</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">
+  Called before a nutrition value is added (incremented). The returned value replaces the original.
+  This is called for both positive gains (eating) and negative gains (decay via hunger/attack).
+</div>
+
+<h4>onBeforeSet</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeSet</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">
+  Called before a nutrition value is directly set (overwritten). The returned value replaces the original.
+  The final value is always clamped to <code>[0.0, 1.0]</code>.
+</div>
+
+<h4>onBeforeDecay</h4>
+<div class="sig"><span class="kw">float</span> <span class="m">onBeforeDecay</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> decay)</div>
+<div class="desc">
+  Called before decay is applied (hunger loss or damage taken). The returned decay value
+  replaces the original. Return <code>0</code> to prevent decay entirely.
+</div>
+
+<h4>onAfterChange</h4>
+<div class="sig"><span class="kw">default void</span> <span class="m">onAfterChange</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> oldValue, <span class="kw">float</span> newValue)</div>
+<div class="desc">
+  Callback after a nutrition value has changed. Only called when the value actually changed
+  (oldValue &ne; newValue).
+</div>
+
+<div class="example">
+<div class="label">Example &mdash; Slow Decay for Veteran Players</div>
+<pre><span class="ty">DietHookRegistry</span>.<span class="m">registerNutritionRuleHook</span>(<span class="kw">new</span> <span class="ty">IDietNutritionRuleHook</span>() {
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeAdd</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value) {
+        <span class="kw">return</span> value; <span class="c">// no change</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeSet</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> value) {
+        <span class="kw">return</span> value; <span class="c">// no change</span>
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public float</span> <span class="m">onBeforeDecay</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group, <span class="kw">float</span> decay) {
+        <span class="c">// Players with >100 hours playtime get 50% slower decay</span>
+        <span class="kw">if</span> (player.<span class="m">getStats</span>().<span class="m">getValue</span>(<span class="ty">Stats</span>.PLAY_TIME) > 7200000) {
+            <span class="kw">return</span> decay * 0.5f;
+        }
+        <span class="kw">return</span> decay;
+    }
+
+    <span class="a">@Override</span>
+    <span class="kw">public void</span> <span class="m">onAfterChange</span>(<span class="ty">Player</span> player, <span class="ty">String</span> group,
+                                   <span class="kw">float</span> oldValue, <span class="kw">float</span> newValue) {
+        <span class="c">// Notify when a group reaches 100%</span>
+        <span class="kw">if</span> (newValue >= 1.0f && oldValue &lt; 1.0f) {
+            player.<span class="m">sendSystemMessage</span>(
+                <span class="ty">Component</span>.<span class="m">literal</span>(<span class="string">"Nutrition group "</span> + group + <span class="string">" is maxed out!"</span>));
+        }
+    }
+});</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietresult">IDietResult</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietResult</span>
+  &nbsp; <span class="tag">@FunctionalInterface</span>
+</p>
+
+<p>Immutable representation of a nutrition result &mdash; a mapping from nutrition groups to float values.</p>
+
+<h3>Constants</h3>
+<div class="sig"><span class="ty">IDietResult</span> EMPTY = <span class="ty">Map</span>::of</div>
+
+<h3>Abstract Method</h3>
+<div class="sig"><span class="ty">Map</span>&lt;<span class="ty">IDietGroup</span>, <span class="ty">Float</span>&gt; <span class="m">get</span>()</div>
+
+<h3>Default Methods</h3>
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">merge</span>(<span class="ty">IDietResult</span> other)</div>
+<div class="desc">Merges another result into this one, summing values for overlapping groups. Returns a new instance.</div>
+
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">add</span>(<span class="ty">IDietGroup</span> group, <span class="kw">float</span> value)</div>
+<div class="desc">Adds a single group-value pair. Returns a new instance.</div>
+
+<div class="sig"><span class="kw">default</span> <span class="ty">IDietResult</span> <span class="m">scale</span>(<span class="kw">float</span> multiplier)</div>
+<div class="desc">Multiplies all values by the given factor. Returns a new instance.</div>
+
+<div class="sig"><span class="kw">default boolean</span> <span class="m">isEmpty</span>()</div>
+<div class="desc">Returns <code>true</code> if there are no nutrition entries.</div>
+
+<div class="sig"><span class="kw">default float</span> <span class="m">getValue</span>(<span class="ty">IDietGroup</span> group)</div>
+<div class="desc">Returns the value for a specific group, or <code>0.0f</code> if absent.</div>
+
+<div class="example">
+<div class="label">Example &mdash; Composing Results</div>
+<pre><span class="ty">IDietResult</span> base = <span class="ty">Map</span>::of; <span class="c">// EMPTY</span>
+<span class="ty">IDietResult</span> withFruit = base.<span class="m">add</span>(fruitGroup, 0.3f);
+<span class="ty">IDietResult</span> combined = withFruit.<span class="m">merge</span>(otherResult);
+<span class="ty">IDietResult</span> doubled = combined.<span class="m">scale</span>(2.0f);
+
+<span class="kw">if</span> (!doubled.<span class="m">isEmpty</span>()) {
+    <span class="kw">float</span> fruitVal = doubled.<span class="m">getValue</span>(fruitGroup);
+}</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idietgroup">IDietGroup</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietGroup</span>
+</p>
+
+<p>Represents a single nutrition group (e.g., "fruits", "proteins", "grains").</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getName()</code></td><td><code>String</code></td><td>Unique group identifier</td></tr>
+<tr><td><code>getIcon()</code></td><td><code>Item</code></td><td>Representative item for UI display</td></tr>
+<tr><td><code>getColor()</code></td><td><code>DietColor</code></td><td>Display color (RGBA)</td></tr>
+<tr><td><code>getDefaultValue()</code></td><td><code>float</code></td><td>Default nutrition value for new players</td></tr>
+<tr><td><code>getOrder()</code></td><td><code>int</code></td><td>Sort order in UI (lower = first)</td></tr>
+<tr><td><code>getGainMultiplier()</code></td><td><code>double</code></td><td>Multiplier applied to all gains (eating)</td></tr>
+<tr><td><code>getDecayMultiplier()</code></td><td><code>double</code></td><td>Multiplier applied to all decay (hunger/damage)</td></tr>
+<tr><td><code>isBeneficial()</code></td><td><code>boolean</code></td><td>Whether high values are beneficial</td></tr>
+<tr><td><code>getTag()</code></td><td><code>TagKey&lt;Item&gt;</code></td><td>Item tag associated with this group</td></tr>
+<tr><td><code>getTranslationKey()</code></td><td><code>String</code></td><td>Localization key for display name</td></tr>
+<tr><td><code>isNegative()</code></td><td><code>boolean</code></td><td>Whether this group represents negative effects</td></tr>
+<tr><td><code>ignoreAttack()</code></td><td><code>boolean</code></td><td>Skip decay on damage taken</td></tr>
+<tr><td><code>ignoreHunger()</code></td><td><code>boolean</code></td><td>Skip decay on hunger loss</td></tr>
+<tr><td><code>contains(ItemStack)</code></td><td><code>boolean</code></td><td>Check if item belongs to this group's tag</td></tr>
+<tr><td><code>save()</code></td><td><code>CompoundTag</code></td><td>Serialize to NBT for network sync</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietsuite">IDietSuite</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietSuite</span>
+</p>
+
+<p>A suite groups multiple nutrition groups together with associated effects.</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getName()</code></td><td><code>String</code></td><td>Suite identifier</td></tr>
+<tr><td><code>getGroups()</code></td><td><code>Set&lt;IDietGroup&gt;</code></td><td>Nutrition groups in this suite</td></tr>
+<tr><td><code>getEffects()</code></td><td><code>List&lt;IDietEffect&gt;</code></td><td>Effects triggered by nutrition thresholds</td></tr>
+<tr><td><code>save()</code></td><td><code>CompoundTag</code></td><td>Serialize to NBT</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idieteffect">IDietEffect</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietEffect</span>
+</p>
+
+<p>Defines a set of conditions, attributes, and status effects that activate when nutrition thresholds are met.</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getConditions()</code></td><td><code>List&lt;IDietCondition&gt;</code></td><td>Conditions that must all be met</td></tr>
+<tr><td><code>getAttributes()</code></td><td><code>List&lt;IDietAttribute&gt;</code></td><td>Attribute modifiers to apply</td></tr>
+<tr><td><code>getStatusEffects()</code></td><td><code>List&lt;IDietStatusEffect&gt;</code></td><td>Status effects to apply</td></tr>
+<tr><td><code>getUuid()</code></td><td><code>UUID</code></td><td>Unique identifier for this effect</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietcondition">IDietCondition</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietCondition</span>
+</p>
+
+<p>A single condition that checks whether a nutrition group value falls within a range.</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getGroup()</code></td><td><code>String</code></td><td>Nutrition group name to check</td></tr>
+<tr><td><code>getMin()</code></td><td><code>float</code></td><td>Minimum threshold (inclusive)</td></tr>
+<tr><td><code>getMax()</code></td><td><code>float</code></td><td>Maximum threshold (inclusive)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietattribute">IDietAttribute</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietAttribute</span>
+</p>
+
+<p>An attribute modifier applied when nutrition conditions are met.</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getAttribute()</code></td><td><code>String</code></td><td>Attribute registry name</td></tr>
+<tr><td><code>getAmount()</code></td><td><code>double</code></td><td>Modifier amount</td></tr>
+<tr><td><code>getOperation()</code></td><td><code>AttributeModifier.Operation</code></td><td>Modifier operation (ADD_VALUE, MULTIPLY_BASE, MULTIPLY_TOTAL)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="idietstatuseffect">IDietStatusEffect</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.type.IDietStatusEffect</span>
+</p>
+
+<p>A status effect applied when nutrition conditions are met.</p>
+
+<table>
+<tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+<tr><td><code>getEffect()</code></td><td><code>String</code></td><td>MobEffect registry name</td></tr>
+<tr><td><code>getAmplifier()</code></td><td><code>int</code></td><td>Effect amplifier level (0-based)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="dietcolor">DietColor</h2>
+
+<p>
+  <span class="tag">net.appleseed.appleseed.api.util.DietColor</span>
+  &nbsp; <span class="tag">record</span>
+</p>
+
+<p>Immutable RGBA color record used throughout the nutrition UI.</p>
+
+<div class="sig"><span class="kw">public record</span> <span class="ty">DietColor</span>(<span class="kw">int</span> r, <span class="kw">int</span> g, <span class="kw">int</span> b, <span class="kw">int</span> a)</div>
+
+<h3>Static Factory Methods</h3>
+<div class="sig"><span class="kw">static</span> <span class="ty">DietColor</span> <span class="m">fromInt</span>(<span class="kw">int</span> color)</div>
+<div class="desc">Creates a DietColor from an ARGB packed integer (e.g., <code>0xFFFF0000</code>).</div>
+
+<div class="sig"><span class="kw">static</span> <span class="ty">DietColor</span> <span class="m">fromHex</span>(<span class="ty">String</span> hex)</div>
+<div class="desc">Creates a DietColor from a hex string (<code>"#RRGGBB"</code> or <code>"#AARRGGBB"</code>).</div>
+
+<h3>Instance Method</h3>
+<div class="sig"><span class="kw">int</span> <span class="m">toInt</span>()</div>
+<div class="desc">Converts to an ARGB packed integer.</div>
+
+<div class="example">
+<div class="label">Example</div>
+<pre><span class="ty">DietColor</span> red = <span class="ty">DietColor</span>.<span class="m">fromInt</span>(0xFFFF0000);
+<span class="ty">DietColor</span> blue = <span class="ty">DietColor</span>.<span class="m">fromHex</span>(<span class="string">"#0000FF"</span>);
+<span class="ty">DietColor</span> custom = <span class="kw">new</span> <span class="ty">DietColor</span>(255, 128, 0, 255);
+<span class="kw">int</span> packed = custom.<span class="m">toInt</span>();</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="flow-sheet">Execution Flow</h2>
+
+<p>How the Hook API integrates into AppleSeed's core systems:</p>
+
+<h3>Item Food Eating</h3>
+<div class="flow-diagram">Player eats food item
+  |
+  +--&gt; <strong>DietHookRegistry.shouldInterceptItemFood()</strong>
+  |       All IDietItemFoodEatHook.shouldIntercept() called
+  |       If any returns true &rarr; skip default lookup
+  |
+  +--&gt; Default nutrition lookup (or use intercepted custom gains)
+  |
+  +--&gt; <strong>DietHookRegistry.modifyItemFoodGains()</strong>
+  |       All IDietItemFoodEatHook.modifyNutritionGains() called in order
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeAdd()</strong>
+  |       All IDietNutritionRuleHook.onBeforeAdd() called
+  |
+  +--&gt; DietData.addValue() &rarr; clamped to [0.0, 1.0]
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+  |       All IDietNutritionRuleHook.onAfterChange() called
+  |
+  +--&gt; <strong>DietHookRegistry.onAfterItemFoodEat()</strong>
+          All IDietItemFoodEatHook.onAfterEat() called</div>
+
+<h3>Nutrition Decay (Hunger / Damage)</h3>
+<div class="flow-diagram">Hunger loss or damage taken
+  |
+  +--&gt; Calculate base decay (hunger: lost * 0.005, damage: 0.001)
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeDecay()</strong>
+  |       All IDietNutritionRuleHook.onBeforeDecay() called
+  |       Returned value &times; group decay multiplier
+  |
+  +--&gt; DietData.addValue(player, group, -decay)
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+          All IDietNutritionRuleHook.onAfterChange() called</div>
+
+<h3>Block Food Eating</h3>
+<div class="flow-diagram">Player right-clicks food block
+  |
+  +--&gt; Check #appleseed:food_blocks tag
+  |
+  +--&gt; <strong>DietHookRegistry.shouldProcessBlockFood()</strong>
+  |       All IDietBlockFoodEatHook.shouldProcessBlock() called (AND logic)
+  |
+  +--&gt; Lookup block nutrition data, divide by bites
+  |
+  +--&gt; <strong>DietHookRegistry.modifyBlockFoodGains()</strong>
+  |       All IDietBlockFoodEatHook.modifyNutritionGains() called
+  |
+  +--&gt; <strong>DietHookRegistry.processBeforeAdd()</strong>
+  |
+  +--&gt; DietData.addValue() for each group
+  |
+  +--&gt; <strong>DietHookRegistry.processAfterChange()</strong>
+  |
+  +--&gt; <strong>DietHookRegistry.onAfterBlockFoodEat()</strong></div>
+
+<h3>Tooltip Display</h3>
+<div class="flow-diagram">ItemTooltipEvent fires
+  |
+  +--&gt; Check food properties or food_blocks tag
+  |
+  +--&gt; <strong>DietHookRegistry.shouldShowTooltip()</strong>
+  |       All IDietTooltipFilterHook.shouldShowTooltip() called (AND logic)
+  |
+  +--&gt; Get nutrition data (from SandwichCompat or FoodNutritionManager)
+  |
+  +--&gt; <strong>DietHookRegistry.modifyTooltipNutrition()</strong>
+  |       All IDietTooltipFilterHook.modifyTooltipNutrition() called
+  |
+  +--&gt; Render tooltip lines</div>
+
+<h3>Auto Calculation</h3>
+<div class="flow-diagram">Server datapack sync / reload
+  |
+  +--&gt; Collect all recipes from RecipeManager
+  |
+  +--&gt; <strong>DietHookRegistry.isValidRecipeType()</strong>
+  |       All IDietRecipeFilterHook.isValidRecipeType() called (AND logic)
+  |       Additional hardcoded type checks (Crafting, Smelting, etc.)
+  |
+  +--&gt; <strong>DietHookRegistry.shouldProcessItem()</strong>
+  |       All IDietRecipeFilterHook.shouldProcessItem() called (AND logic)
+  |
+  +--&gt; Recursive recipe analysis for each food item
+  |
+  +--&gt; Save calculated nutrition to config</div>
+
+<!-- ============================================================ -->
+<h2 id="package-structure">Package Structure</h2>
+
+<div class="sig" style="line-height:2.2;">
+<span class="c">// Hook API &mdash; register and intercept nutrition behaviors</span>
+<span class="ty">net.appleseed.appleseed.api.hook</span>
+  <span class="a">├──</span> <span class="ty">DietHookRegistry</span>        <span class="c">// Central registry (static)</span>
+  <span class="a">├──</span> <span class="ty">IDietItemFoodEatHook</span>     <span class="c">// Item food eating hook</span>
+  <span class="a">├──</span> <span class="ty">IDietBlockFoodEatHook</span>    <span class="c">// Block food eating hook</span>
+  <span class="a">├──</span> <span class="ty">IDietRecipeFilterHook</span>    <span class="c">// Recipe/item filter hook</span>
+  <span class="a">├──</span> <span class="ty">IDietTooltipFilterHook</span>   <span class="c">// Tooltip display hook</span>
+  <span class="a">└──</span> <span class="ty">IDietNutritionRuleHook</span>   <span class="c">// Value add/set/decay hook</span>
+
+<span class="c">// Type API &mdash; data model interfaces</span>
+<span class="ty">net.appleseed.appleseed.api.type</span>
+  <span class="a">├──</span> <span class="ty">IDietResult</span>              <span class="c">// Immutable nutrition result map</span>
+  <span class="a">├──</span> <span class="ty">IDietGroup</span>               <span class="c">// Nutrition group definition</span>
+  <span class="a">├──</span> <span class="ty">IDietSuite</span>               <span class="c">// Group suite with effects</span>
+  <span class="a">├──</span> <span class="ty">IDietEffect</span>              <span class="c">// Effect bundle (conditions + attributes + status)</span>
+  <span class="a">├──</span> <span class="ty">IDietCondition</span>           <span class="c">// Nutrition threshold condition</span>
+  <span class="a">├──</span> <span class="ty">IDietAttribute</span>           <span class="c">// Attribute modifier</span>
+  <span class="a">└──</span> <span class="ty">IDietStatusEffect</span>        <span class="c">// Status effect definition</span>
+
+<span class="c">// Utility API</span>
+<span class="ty">net.appleseed.appleseed.api.util</span>
+  <span class="a">└──</span> <span class="ty">DietColor</span>                <span class="c">// RGBA color record</span>
+</div>
+
+</main>
+</body>
+</html>
