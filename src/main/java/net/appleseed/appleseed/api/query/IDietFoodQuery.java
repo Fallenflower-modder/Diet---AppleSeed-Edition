@@ -1,7 +1,10 @@
 package net.appleseed.appleseed.api.query;
 
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Map;
 
@@ -108,4 +111,40 @@ public interface IDietFoodQuery {
      * @return a map of all blocks to their nutrition data
      */
     Map<Block, Map<String, Float>> getAllBlockData();
+
+    /**
+     * Looks up nutrition data for the given item stack, applies the quality multiplier,
+     * and adds the resulting values to the specified player.
+     * <p>
+     * The final value for each nutrition group is calculated as:
+     * <pre>{@code value * (1.0 + 0.1 * quality)}</pre>
+     * A quality of {@code 0} applies the raw nutrition values unchanged.
+     * <p>
+     * If the item is a {@code BlockItem}, falls back to block nutrition data (per-bite).
+     * This method respects Hook mechanisms — {@link net.appleseed.appleseed.api.hook.DietHookRegistry}
+     * callbacks are invoked during value application.
+     *
+     * @param stack   the item stack to look up nutrition data from
+     * @param quality the quality level (0 = normal, higher = bonus multiplier)
+     * @param player  the player to apply nutrition to
+     */
+    void applyNutrition(ItemStack stack, int quality, Player player);
+
+    /**
+     * Looks up nutrition data for the given block state, applies the quality multiplier,
+     * and adds the resulting values (per-bite) to the specified player.
+     * <p>
+     * The total block nutrition is divided by the number of bites, then the quality
+     * multiplier is applied:
+     * <pre>{@code (totalBlockValue / bites) * (1.0 + 0.1 * quality)}</pre>
+     * A quality of {@code 0} applies the raw per-bite nutrition values unchanged.
+     * <p>
+     * This method respects Hook mechanisms — {@link net.appleseed.appleseed.api.hook.DietHookRegistry}
+     * callbacks are invoked during value application.
+     *
+     * @param state   the block state to look up nutrition data from
+     * @param quality the quality level (0 = normal, higher = bonus multiplier)
+     * @param player  the player to apply nutrition to
+     */
+    void applyNutrition(BlockState state, int quality, Player player);
 }

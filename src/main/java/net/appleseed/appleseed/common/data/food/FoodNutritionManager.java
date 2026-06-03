@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.appleseed.appleseed.AppleSeedConstants;
 import net.appleseed.appleseed.api.query.IDietFoodQuery;
+import net.appleseed.appleseed.common.capability.DietData;
 import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.minecraft.resources.ResourceLocation;
@@ -14,10 +15,13 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.GsonHelper;
 import net.neoforged.fml.loading.FMLPaths;
@@ -421,5 +425,46 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
         }
         FoodNutritionManager instance = isClientSide ? CLIENT : INSTANCE;
         return instance.getNutritions(item);
+    }
+
+    @Override
+    public void applyNutrition(ItemStack stack, int quality, Player player) {
+        if (player.level().isClientSide()) {
+            return;
+        }
+        Item item = stack.getItem();
+        Map<String, Float> nutritions = getNutritions(item);
+        if (nutritions.isEmpty()) {
+            return;
+        }
+        float multiplier = 1.0f + 0.1f * quality;
+        for (Map.Entry<String, Float> entry : nutritions.entrySet()) {
+            float value = entry.getValue() * multiplier;
+            if (value > 0) {
+                DietData.addValue(player, entry.getKey(), value);
+            }
+        }
+        DietData.syncToClient(player);
+    }
+
+    @Override
+    public void applyNutrition(BlockState state, int quality, Player player) {
+        if (player.level().isClientSide()) {
+            return;
+        }
+        Block block = state.getBlock();
+        Map<String, Float> blockNutritions = getBlockNutritions(block);
+        if (blockNutritions.isEmpty()) {
+            return;
+        }
+        int bites = getBlockBites(block);
+        float multiplier = (1.0f + 0.1f * quality) / bites;
+        for (Map.Entry<String, Float> entry : blockNutritions.entrySet()) {
+            float value = entry.getValue() * multiplier;
+            if (value > 0) {
+                DietData.addValue(player, entry.getKey(), value);
+            }
+        }
+        DietData.syncToClient(player);
     }
 }
