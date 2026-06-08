@@ -3,7 +3,6 @@ package net.appleseed.appleseed;
 import net.appleseed.appleseed.api.hook.DietHookRegistry;
 import net.appleseed.appleseed.api.query.DietQuery;
 import net.appleseed.appleseed.api.type.IDietGroup;
-import net.appleseed.appleseed.client.ClientSetup;
 import net.appleseed.appleseed.client.DietClientEvents;
 import net.appleseed.appleseed.common.event.BlockFoodEventHandler;
 import net.appleseed.appleseed.common.capability.DietData;
@@ -15,6 +14,7 @@ import net.appleseed.appleseed.common.data.group.DietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.common.data.recipe.SimulateRecipe;
 import net.appleseed.appleseed.common.recipe.RecipeRegistry;
+import net.appleseed.appleseed.common.registry.ModMenuTypes;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
 import net.appleseed.appleseed.compat.SandwichCompat;
 import net.appleseed.appleseed.network.OpenDietScreenPacket;
@@ -58,7 +58,7 @@ public class AppleSeed {
 
     public AppleSeed(IEventBus bus, ModContainer container) {
         bus.register(RecipeRegistry.class);
-        ClientSetup.MENU_TYPES.register(bus);
+        ModMenuTypes.MENU_TYPES.register(bus);
         bus.addListener(this::commonSetup);
         bus.addListener(this::registerPayloads);
         bus.addListener(this::onConfigReload);

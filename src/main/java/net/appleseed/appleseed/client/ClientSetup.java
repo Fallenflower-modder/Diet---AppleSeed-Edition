@@ -7,11 +7,10 @@ import net.appleseed.appleseed.client.screen.DietMenu;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
+import net.appleseed.appleseed.common.registry.ModMenuTypes;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.MenuType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -21,21 +20,11 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.registries.DeferredRegister;
 import org.lwjgl.glfw.GLFW;
-
-import java.util.function.Supplier;
 
 @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
 public class ClientSetup {
-
-    public static final DeferredRegister<MenuType<?>> MENU_TYPES =
-            DeferredRegister.create(Registries.MENU, AppleSeed.MOD_ID);
-
-    public static final Supplier<MenuType<DietMenu>> DIET_MENU =
-            MENU_TYPES.register("diet", () -> IMenuTypeExtension.create(DietMenu::new));
 
     public static final KeyMapping DIET_KEY = new KeyMapping(
             "key.appleseed.diet",
@@ -51,7 +40,7 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(DIET_MENU.get(), DietScreen::new);
+        event.register(ModMenuTypes.DIET_MENU.get(), DietScreen::new);
     }
 
     @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
