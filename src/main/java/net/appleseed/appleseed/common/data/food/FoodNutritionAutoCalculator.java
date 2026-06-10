@@ -36,8 +36,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FoodNutritionAutoCalculator {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final java.nio.file.Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("apple_seed_foods");
+    private static final java.nio.file.Path BANNED_RECIPES_FILE = FMLPaths.CONFIGDIR.get().resolve("appleseed_banned_recipe.json");
     private static final Map<Item, Map<String, Float>> calculatedNutrition = new ConcurrentHashMap<>();
     private static final Set<Item> cycleDetected = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    /**
+     * Stores compiled regex patterns for banned recipe matching.
+     * Wildcards ({@code *}) are converted to {@code .*} regex; exact IDs match literally.
+     */
+    private static final List<java.util.regex.Pattern> bannedRecipePatterns = new ArrayList<>();
 
     static {
         AppleSeedConstants.LOG.debug("[FoodNutritionAutoCalculator] Static initializer loaded");
@@ -48,6 +54,77 @@ public class FoodNutritionAutoCalculator {
         if (!dir.exists()) {
             dir.mkdirs();
         }
+    }
+
+    /**
+     * Loads banned recipe patterns from the {@code appleseed_banned_recipe.json} config file.
+     * <p>
+     * Supports wildcards ({@code *} matches any characters). Examples:
+     * <pre>{@code
+     * {
+     *   "banned_recipes": [
+     *     "minecraft:bread",        // exact match
+     *     "minecraft:*_from_smelting", // wildcard match
+     *     "somemod:*"               // ban all recipes from "somemod"
+     *   ]
+     * }
+     * }</pre>
+     * <p>
+     * Banning a recipe only excludes that specific recipe — other recipes
+     * producing the same output item are unaffected.
+     */
+    private static void loadBannedRecipes() {
+        bannedRecipePatterns.clear();
+        File file = BANNED_RECIPES_FILE.toFile();
+        if (!file.exists()) {
+            AppleSeedConstants.LOG.debug("[loadBannedRecipes] No banned recipe config found at {}", BANNED_RECIPES_FILE);
+            return;
+        }
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject json = GSON.fromJson(reader, JsonObject.class);
+            if (json.has("banned_recipes")) {
+                JsonArray arr = json.getAsJsonArray("banned_recipes");
+                for (JsonElement elem : arr) {
+                    String pattern = elem.getAsString();
+                    // Split by '*', quote each literal segment, join with '.*'
+                    String[] parts = pattern.split("\\*", -1);
+                    StringBuilder regexBuilder = new StringBuilder();
+                    for (int i = 0; i < parts.length; i++) {
+                        if (i > 0) {
+                            regexBuilder.append(".*");
+                        }
+                        regexBuilder.append(java.util.regex.Pattern.quote(parts[i]));
+                    }
+                    bannedRecipePatterns.add(java.util.regex.Pattern.compile(regexBuilder.toString()));
+                }
+            }
+            AppleSeedConstants.LOG.info("[loadBannedRecipes] Loaded {} banned recipe patterns: {}",
+                    bannedRecipePatterns.size(), bannedRecipePatterns.stream()
+                            .map(java.util.regex.Pattern::pattern)
+                            .map(s -> s.replace("\\Q", "").replace("\\E", ""))
+                            .toList());
+        } catch (Exception e) {
+            AppleSeedConstants.LOG.error("[loadBannedRecipes] Failed to load banned recipes: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Checks whether a recipe is banned by its ID.
+     * <p>
+     * Supports wildcard patterns: {@code *} matches any characters.
+     * For example, {@code "minecraft:*"} matches all vanilla recipes.
+     *
+     * @param recipeId the recipe's ResourceLocation ID
+     * @return {@code true} if the recipe matches any banned pattern and should be skipped
+     */
+    private static boolean isBannedRecipe(ResourceLocation recipeId) {
+        String idString = recipeId.toString();
+        for (java.util.regex.Pattern pattern : bannedRecipePatterns) {
+            if (pattern.matcher(idString).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void loadConfigSimulateRecipes(Map<Item, List<RecipeHolder<?>>> allRecipes) {
@@ -187,6 +264,7 @@ public class FoodNutritionAutoCalculator {
 
     private static void calculateAll(MinecraftServer server, boolean overwriteExisting, boolean isReload) {
         ensureConfigDir();
+        loadBannedRecipes();
         calculatedNutrition.clear();
         cycleDetected.clear();
         configCountStatic = 0;
@@ -240,6 +318,12 @@ public class FoodNutritionAutoCalculator {
             }
 
             if (!isValidRecipeType(recipe)) {
+                skippedRecipes++;
+                continue;
+            }
+
+            if (isBannedRecipe(holder.id())) {
+                AppleSeedConstants.LOG.debug("[calculateAll] Skipping banned recipe: {}", holder.id());
                 skippedRecipes++;
                 continue;
             }
@@ -436,6 +520,11 @@ public class FoodNutritionAutoCalculator {
                     int count = recipe.getResultItem(server.registryAccess()).getCount();
 
                     if (!isValidRecipeType(recipe)) {
+                        continue;
+                    }
+
+                    if (isBannedRecipe(holder.id())) {
+                        AppleSeedConstants.LOG.debug("[calculateNutrition] Skipping banned recipe: {}", holder.id());
                         continue;
                     }
 
