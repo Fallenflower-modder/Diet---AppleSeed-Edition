@@ -3,7 +3,7 @@ package net.appleseed.appleseed.compat;
 import net.appleseed.appleseed.AppleSeed;
 import net.appleseed.appleseed.AppleSeedConstants;
 import net.appleseed.appleseed.client.screen.DietMenu;
-import net.appleseed.appleseed.client.screen.DietScreen;
+import net.appleseed.appleseed.compat.ipn.IPNCompat;
 import net.appleseed.appleseed.common.config.DietConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -52,7 +52,7 @@ public class FTBCompat {
     static void openDietScreen() {
         var player = Minecraft.getInstance().player;
         if (player != null) {
-            Minecraft.getInstance().setScreen(new DietScreen(
+            Minecraft.getInstance().setScreen(IPNCompat.createScreen(
                     new DietMenu(0, player.getInventory()),
                     player.getInventory(),
                     Component.translatable("gui.appleseed.title")

@@ -1,7 +1,7 @@
 package net.appleseed.appleseed.network;
 
 import net.appleseed.appleseed.client.screen.DietMenu;
-import net.appleseed.appleseed.client.screen.DietScreen;
+import net.appleseed.appleseed.compat.ipn.IPNCompat;
 import net.appleseed.appleseed.common.capability.DietData;
 import net.appleseed.appleseed.common.data.ServerDietConfig;
 import net.minecraft.client.Minecraft;
@@ -39,7 +39,7 @@ public class ClientPacketHandler {
         context.enqueueWork(() -> {
             var player = Minecraft.getInstance().player;
             if (player != null) {
-                Minecraft.getInstance().setScreen(new DietScreen(
+                Minecraft.getInstance().setScreen(IPNCompat.createScreen(
                         new DietMenu(0, player.getInventory()),
                         player.getInventory(),
                         Component.translatable("gui.appleseed.title")

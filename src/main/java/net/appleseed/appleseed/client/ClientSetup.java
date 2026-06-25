@@ -2,12 +2,12 @@ package net.appleseed.appleseed.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.appleseed.appleseed.AppleSeed;
-import net.appleseed.appleseed.client.screen.DietScreen;
 import net.appleseed.appleseed.client.screen.DietMenu;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroups;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
 import net.appleseed.appleseed.common.registry.ModMenuTypes;
+import net.appleseed.appleseed.compat.ipn.IPNCompat;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -40,7 +40,7 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(ModMenuTypes.DIET_MENU.get(), DietScreen::new);
+        event.register(ModMenuTypes.DIET_MENU.get(), IPNCompat::createScreen);
     }
 
     @EventBusSubscriber(modid = AppleSeed.MOD_ID, value = Dist.CLIENT)
@@ -62,7 +62,7 @@ public class ClientSetup {
             while (DIET_KEY.consumeClick()) {
                 var player = Minecraft.getInstance().player;
                 if (player != null) {
-                    Minecraft.getInstance().setScreen(new DietScreen(
+                    Minecraft.getInstance().setScreen(IPNCompat.createScreen(
                             new DietMenu(0, player.getInventory()),
                             player.getInventory(),
                             Component.translatable("gui.appleseed.title")

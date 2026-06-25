@@ -2,6 +2,7 @@ package net.appleseed.appleseed.client.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.appleseed.appleseed.AppleSeed;
+import net.appleseed.appleseed.compat.ipn.IPNCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
@@ -30,7 +31,7 @@ public class InventoryScreenButton extends AbstractButton {
     public void onPress() {
         Player player = Minecraft.getInstance().player;
         if (player != null) {
-            Minecraft.getInstance().setScreen(new DietScreen(
+            Minecraft.getInstance().setScreen(IPNCompat.createScreen(
                     new DietMenu(0, player.getInventory()),
                     player.getInventory(),
                     Component.translatable("gui.appleseed.title")
