@@ -7,10 +7,18 @@ repositories {
     mavenLocal()
     maven { url = 'https://neoforged.forgecdn.net/releases' }
     maven { url = 'https://neoforged.forgecdn.net/mojang-meta' }
+    maven { url = 'https://api.modrinth.com/maven' }
     mavenCentral()
 }
 
-version = '2.1.0-1.21.1'
+dependencies {
+    // Inventory Profiles Next — compileOnly for @IPNIgnore annotation
+    // Runtime check via ModList.get().isLoaded("inventoryprofilesnext") ensures
+    // IPN-related code only executes when IPN is actually present.
+    compileOnly 'maven.modrinth:inventory-profiles-next:neoforge-1.21.1-2.1.10'
+}
+
+version = '2.2.0-1.21.1'
 base.archivesName = "appleseed"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
