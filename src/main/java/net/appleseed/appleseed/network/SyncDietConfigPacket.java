@@ -40,6 +40,7 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
                     ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.BOOL.decode(buf),
+                    ByteBufCodecs.BOOL.decode(buf),
                     ByteBufCodecs.STRING_UTF8.decode(buf)
             );
         }
@@ -57,6 +58,7 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
             ByteBufCodecs.BOOL.encode(buf, data.isNegative());
             ByteBufCodecs.BOOL.encode(buf, data.ignoreAttack());
             ByteBufCodecs.BOOL.encode(buf, data.ignoreHunger());
+            ByteBufCodecs.BOOL.encode(buf, data.ignoreSaturation());
             ByteBufCodecs.STRING_UTF8.encode(buf, data.translationKey());
         }
     };
@@ -140,7 +142,7 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
 
     public record GroupData(String name, String iconId, int color, float defaultValue, int order,
                             double gainMultiplier, double decayMultiplier, boolean beneficial,
-                            boolean isNegative, boolean ignoreAttack, boolean ignoreHunger,
+                            boolean isNegative, boolean ignoreAttack, boolean ignoreHunger, boolean ignoreSaturation,
                             String translationKey) {
         public Map<String, Object> toMap() {
             Map<String, Object> data = new HashMap<>();
@@ -155,6 +157,7 @@ public record SyncDietConfigPacket(List<GroupData> groups, Map<String, Map<Strin
             data.put("isNegative", isNegative);
             data.put("ignoreAttack", ignoreAttack);
             data.put("ignoreHunger", ignoreHunger);
+            data.put("ignoreSaturation", ignoreSaturation);
             data.put("translationKey", translationKey);
             return data;
         }

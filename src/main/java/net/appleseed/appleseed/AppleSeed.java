@@ -1,7 +1,9 @@
 package net.appleseed.appleseed;
 
 import net.appleseed.appleseed.api.hook.DietHookRegistry;
+import net.appleseed.appleseed.api.query.DietDecayQuery;
 import net.appleseed.appleseed.api.query.DietQuery;
+import net.appleseed.appleseed.api.query.IDietDecayQuery;
 import net.appleseed.appleseed.api.type.IDietGroup;
 import net.appleseed.appleseed.common.registry.ModMenuTypes;
 import net.appleseed.appleseed.client.DietClientEvents;
@@ -13,7 +15,6 @@ import net.appleseed.appleseed.common.data.food.FoodNutritionAutoCalculator;
 import net.appleseed.appleseed.common.data.food.FoodNutritionManager;
 import net.appleseed.appleseed.common.data.group.DietGroup;
 import net.appleseed.appleseed.common.data.group.DietGroups;
-import net.appleseed.appleseed.common.data.recipe.SimulateRecipe;
 import net.appleseed.appleseed.common.recipe.RecipeRegistry;
 import net.appleseed.appleseed.common.data.suite.DietSuites;
 import net.appleseed.appleseed.compat.SandwichCompat;
@@ -52,8 +53,15 @@ public class AppleSeed {
     public static final String MOD_ID = "appleseed";
 
     public static GameRules.Key<GameRules.BooleanValue> RULE_KEEPNUTRITIONS;
+    public static GameRules.Key<GameRules.IntegerValue> RULE_DECAY_BY_HIT;
+    public static GameRules.Key<GameRules.IntegerValue> RULE_DECAY_BY_HUNGER;
+    public static GameRules.Key<GameRules.IntegerValue> RULE_DECAY_BY_SATURATION;
+
+    /** 游戏规则以整数存储，实际系数 = 整数值 / DECAY_MULTIPLIER_SCALE */
+    private static final int DECAY_MULTIPLIER_SCALE = 1_000_000;
 
     private static final java.util.Map<Player, Integer> prevFoodLevels = new java.util.WeakHashMap<>();
+    private static final java.util.Map<Player, Float> prevSaturationLevels = new java.util.WeakHashMap<>();
     private static final java.util.Map<java.util.UUID, java.util.Map<String, Float>> deathNutritionCache = new java.util.HashMap<>();
 
     public AppleSeed(IEventBus bus, ModContainer container) {
@@ -76,6 +84,22 @@ public class AppleSeed {
         container.registerConfig(ModConfig.Type.COMMON, DietConfig.SPEC);
 
         DietQuery.setInstance(FoodNutritionManager.INSTANCE);
+        DietDecayQuery.setInstance(new IDietDecayQuery() {
+            @Override
+            public double getHitDecayMultiplier(Player player) {
+                return player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get() / (double) DECAY_MULTIPLIER_SCALE;
+            }
+
+            @Override
+            public double getHungerDecayMultiplier(Player player) {
+                return player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get() / (double) DECAY_MULTIPLIER_SCALE;
+            }
+
+            @Override
+            public double getSaturationDecayMultiplier(Player player) {
+                return player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get() / (double) DECAY_MULTIPLIER_SCALE;
+            }
+        });
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             NeoForge.EVENT_BUS.register(DietClientEvents.class);
@@ -88,11 +112,15 @@ public class AppleSeed {
             return;
         }
 
+        boolean changed = false;
+
+        // --- 饥饿衰减渠道 ---
         int currentFood = player.getFoodData().getFoodLevel();
         Integer prevFood = prevFoodLevels.get(player);
         if (prevFood != null && currentFood < prevFood) {
             int lost = prevFood - currentFood;
-            float baseDecay = lost * 0.005f;
+            double hungerMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get() / (double) DECAY_MULTIPLIER_SCALE;
+            float baseDecay = lost * (float) hungerMultiplier;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
                 if (DietConfig.isGroupIgnoreHunger(group.getName(), group.ignoreHunger())) {
                     continue;
@@ -103,11 +131,38 @@ public class AppleSeed {
                     float oldValue = DietData.getValue(player, group.getName());
                     DietData.addValue(player, group.getName(), -decay);
                     DietHookRegistry.processAfterChange(player, group.getName(), oldValue, DietData.getValue(player, group.getName()));
+                    changed = true;
                 }
             }
-            DietData.syncToClient(player);
         }
         prevFoodLevels.put(player, currentFood);
+
+        // --- 饱和度衰减渠道 ---
+        float currentSaturation = player.getFoodData().getSaturationLevel();
+        Float prevSaturation = prevSaturationLevels.get(player);
+        if (prevSaturation != null && currentSaturation < prevSaturation) {
+            float lost = prevSaturation - currentSaturation;
+            double saturationMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get() / (double) DECAY_MULTIPLIER_SCALE;
+            float baseDecay = lost * (float) saturationMultiplier;
+            for (IDietGroup group : DietGroups.getGroups(player.level())) {
+                if (DietConfig.isGroupIgnoreSaturation(group.getName(), group.ignoreSaturation())) {
+                    continue;
+                }
+                float decay = baseDecay * (float) group.getDecayMultiplier();
+                decay = DietHookRegistry.processBeforeDecay(player, group.getName(), decay);
+                if (decay > 0) {
+                    float oldValue = DietData.getValue(player, group.getName());
+                    DietData.addValue(player, group.getName(), -decay);
+                    DietHookRegistry.processAfterChange(player, group.getName(), oldValue, DietData.getValue(player, group.getName()));
+                    changed = true;
+                }
+            }
+        }
+        prevSaturationLevels.put(player, currentSaturation);
+
+        if (changed) {
+            DietData.syncToClient(player);
+        }
 
         if (player.tickCount % 20 == 0) {
             DietEffects.applyEffects(player);
@@ -119,7 +174,8 @@ public class AppleSeed {
             return;
         }
         if (event.getEntity() instanceof Player player) {
-            float baseDecay = 0.001f;
+            double hitMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get() / (double) DECAY_MULTIPLIER_SCALE;
+            float baseDecay = (float) hitMultiplier;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
                 if (DietConfig.isGroupIgnoreAttack(group.getName(), group.ignoreAttack())) {
                     continue;
@@ -187,6 +243,7 @@ public class AppleSeed {
                         dietGroup.isNegative(),
                         dietGroup.ignoreAttack(),
                         dietGroup.ignoreHunger(),
+                        dietGroup.ignoreSaturation(),
                         dietGroup.getTranslationKey()
                 ));
             }
@@ -254,6 +311,12 @@ public class AppleSeed {
     private void commonSetup(final FMLCommonSetupEvent event) {
         RULE_KEEPNUTRITIONS = GameRules.register("keepNutritions", GameRules.Category.PLAYER,
                 GameRules.BooleanValue.create(false));
+        RULE_DECAY_BY_HIT = GameRules.register("nutritionDecayByHitMultiplier", GameRules.Category.PLAYER,
+                GameRules.IntegerValue.create((int) (0.001 * DECAY_MULTIPLIER_SCALE)));
+        RULE_DECAY_BY_HUNGER = GameRules.register("nutritionDecayByHungerMultiplier", GameRules.Category.PLAYER,
+                GameRules.IntegerValue.create((int) (0.005 * DECAY_MULTIPLIER_SCALE)));
+        RULE_DECAY_BY_SATURATION = GameRules.register("nutritionDecayBySaturationMultiplier", GameRules.Category.PLAYER,
+                GameRules.IntegerValue.create((int) (0.0 * DECAY_MULTIPLIER_SCALE)));
         FoodNutritionAutoCalculator.ensureConfigDir();
         AppleSeedConstants.LOG.info("AppleSeed initialized!");
     }

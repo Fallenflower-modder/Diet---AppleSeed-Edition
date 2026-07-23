@@ -41,22 +41,27 @@ public class DietConfig {
     public final ModConfigSpec.BooleanValue grainsIsNegative;
     public final ModConfigSpec.BooleanValue grainsIgnoreAttack;
     public final ModConfigSpec.BooleanValue grainsIgnoreHunger;
+    public final ModConfigSpec.BooleanValue grainsIgnoreSaturation;
 
     public final ModConfigSpec.BooleanValue fruitsIsNegative;
     public final ModConfigSpec.BooleanValue fruitsIgnoreAttack;
     public final ModConfigSpec.BooleanValue fruitsIgnoreHunger;
+    public final ModConfigSpec.BooleanValue fruitsIgnoreSaturation;
 
     public final ModConfigSpec.BooleanValue vegetablesIsNegative;
     public final ModConfigSpec.BooleanValue vegetablesIgnoreAttack;
     public final ModConfigSpec.BooleanValue vegetablesIgnoreHunger;
+    public final ModConfigSpec.BooleanValue vegetablesIgnoreSaturation;
 
     public final ModConfigSpec.BooleanValue proteinsIsNegative;
     public final ModConfigSpec.BooleanValue proteinsIgnoreAttack;
     public final ModConfigSpec.BooleanValue proteinsIgnoreHunger;
+    public final ModConfigSpec.BooleanValue proteinsIgnoreSaturation;
 
     public final ModConfigSpec.BooleanValue sugarsIsNegative;
     public final ModConfigSpec.BooleanValue sugarsIgnoreAttack;
     public final ModConfigSpec.BooleanValue sugarsIgnoreHunger;
+    public final ModConfigSpec.BooleanValue sugarsIgnoreSaturation;
 
     public final ModConfigSpec.ConfigValue<List<? extends String>> grainsRanges;
     public final ModConfigSpec.ConfigValue<List<? extends String>> fruitsRanges;
@@ -112,12 +117,14 @@ public class DietConfig {
                 "is_negative - 是否为负面营养素（按配方计算食物营养值时忽略此营养素）",
                 "ignore_attack - 受到攻击时该营养素是否不减少",
                 "ignore_hunger - 饱食度降低时该营养素是否不减少（注意：与上方General_Settings中的全局ignore_hunger语义不同，此处仅控制衰减行为）",
+                "ignore_saturation - 饱和度降低时该营养素是否不减少",
                 "",
                 "Group Override Settings:",
                 "Override fields for the 5 preset nutrition groups (grains/fruits/vegetables/proteins/sugars):",
                 "is_negative - Whether this is a negative nutrition (ignored when calculating food nutrition via recipe).",
                 "ignore_attack - Whether this nutrition does not decay when the player takes damage.",
                 "ignore_hunger - Whether this nutrition does not decay when hunger decreases.",
+                "ignore_saturation - Whether this nutrition does not decay when saturation decreases.",
                 "Note: The ignore_hunger here is different from the global ignore_hunger in General_Settings; it only controls decay behavior.")
                 .push("Group_Overrides");
 
@@ -130,6 +137,9 @@ public class DietConfig {
         grainsIgnoreHunger = builder
                 .comment("覆盖谷物的 ignore_hunger 字段", "Override grains ignore_hunger field.")
                 .define("grains_ignore_hunger", false);
+        grainsIgnoreSaturation = builder
+                .comment("覆盖谷物的 ignore_saturation 字段", "Override grains ignore_saturation field.")
+                .define("grains_ignore_saturation", false);
 
         fruitsIsNegative = builder
                 .comment("覆盖水果的 is_negative 字段", "Override fruits is_negative field.")
@@ -140,6 +150,9 @@ public class DietConfig {
         fruitsIgnoreHunger = builder
                 .comment("覆盖水果的 ignore_hunger 字段", "Override fruits ignore_hunger field.")
                 .define("fruits_ignore_hunger", false);
+        fruitsIgnoreSaturation = builder
+                .comment("覆盖水果的 ignore_saturation 字段", "Override fruits ignore_saturation field.")
+                .define("fruits_ignore_saturation", false);
 
         vegetablesIsNegative = builder
                 .comment("覆盖蔬菜的 is_negative 字段", "Override vegetables is_negative field.")
@@ -150,6 +163,9 @@ public class DietConfig {
         vegetablesIgnoreHunger = builder
                 .comment("覆盖蔬菜的 ignore_hunger 字段", "Override vegetables ignore_hunger field.")
                 .define("vegetables_ignore_hunger", false);
+        vegetablesIgnoreSaturation = builder
+                .comment("覆盖蔬菜的 ignore_saturation 字段", "Override vegetables ignore_saturation field.")
+                .define("vegetables_ignore_saturation", false);
 
         proteinsIsNegative = builder
                 .comment("覆盖蛋白质的 is_negative 字段", "Override proteins is_negative field.")
@@ -160,6 +176,9 @@ public class DietConfig {
         proteinsIgnoreHunger = builder
                 .comment("覆盖蛋白质的 ignore_hunger 字段", "Override proteins ignore_hunger field.")
                 .define("proteins_ignore_hunger", false);
+        proteinsIgnoreSaturation = builder
+                .comment("覆盖蛋白质的 ignore_saturation 字段", "Override proteins ignore_saturation field.")
+                .define("proteins_ignore_saturation", false);
 
         sugarsIsNegative = builder
                 .comment("覆盖糖类的 is_negative 字段", "Override sugars is_negative field.")
@@ -170,6 +189,9 @@ public class DietConfig {
         sugarsIgnoreHunger = builder
                 .comment("覆盖糖类的 ignore_hunger 字段", "Override sugars ignore_hunger field.")
                 .define("sugars_ignore_hunger", false);
+        sugarsIgnoreSaturation = builder
+                .comment("覆盖糖类的 ignore_saturation 字段", "Override sugars ignore_saturation field.")
+                .define("sugars_ignore_saturation", false);
 
         builder.pop();
 
@@ -309,6 +331,21 @@ public class DietConfig {
             case "vegetables" -> INSTANCE.vegetablesIgnoreHunger.get();
             case "proteins" -> INSTANCE.proteinsIgnoreHunger.get();
             case "sugars" -> INSTANCE.sugarsIgnoreHunger.get();
+            default -> dataFileValue;
+        };
+    }
+
+    /**
+     * 获取 ignore_saturation 的有效值（指饱和度降低时该营养素是否不减少）。
+     * 对于预设营养素，配置文件中的 Group_Overrides 会覆盖数据文件中的值。
+     */
+    public static boolean isGroupIgnoreSaturation(String groupName, boolean dataFileValue) {
+        return switch (groupName) {
+            case "grains" -> INSTANCE.grainsIgnoreSaturation.get();
+            case "fruits" -> INSTANCE.fruitsIgnoreSaturation.get();
+            case "vegetables" -> INSTANCE.vegetablesIgnoreSaturation.get();
+            case "proteins" -> INSTANCE.proteinsIgnoreSaturation.get();
+            case "sugars" -> INSTANCE.sugarsIgnoreSaturation.get();
             default -> dataFileValue;
         };
     }

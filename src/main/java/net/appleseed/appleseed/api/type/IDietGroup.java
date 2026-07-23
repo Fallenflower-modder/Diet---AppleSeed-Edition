@@ -119,6 +119,13 @@ public interface IDietGroup {
     boolean ignoreHunger();
 
     /**
+     * Returns whether this group should ignore saturation loss as a decay source.
+     *
+     * @return {@code true} to ignore saturation decay
+     */
+    boolean ignoreSaturation();
+
+    /**
      * Checks whether the given item stack belongs to this nutrition group.
      * <p>
      * Default implementation checks against the group's tag.

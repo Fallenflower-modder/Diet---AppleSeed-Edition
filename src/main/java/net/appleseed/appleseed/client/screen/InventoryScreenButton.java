@@ -13,13 +13,18 @@ import net.minecraft.world.entity.player.Player;
 
 public class InventoryScreenButton extends AbstractButton {
 
+    /** 默认显示模式下按钮的宽度 */
+    private static final int DEFAULT_WIDTH = 20;
+    /** 默认显示模式下按钮的高度 */
+    private static final int DEFAULT_HEIGHT = 18;
+
     private static final ResourceLocation BUTTON_NORMAL =
             ResourceLocation.fromNamespaceAndPath(AppleSeed.MOD_ID, "textures/gui/diet_button_normal.png");
     private static final ResourceLocation BUTTON_PRESSED =
             ResourceLocation.fromNamespaceAndPath(AppleSeed.MOD_ID, "textures/gui/diet_button_pressed.png");
 
     public InventoryScreenButton(int x, int y) {
-        super(x, y, 20, 20, Component.translatable("gui.appleseed.button"));
+        super(x, y, DEFAULT_WIDTH, DEFAULT_HEIGHT, Component.translatable("gui.appleseed.button"));
     }
 
     public void setPosition(int x, int y) {
@@ -50,7 +55,7 @@ public class InventoryScreenButton extends AbstractButton {
 
         ResourceLocation texture = this.isHoveredOrFocused() ? BUTTON_PRESSED : BUTTON_NORMAL;
         RenderSystem.setShaderTexture(0, texture);
-        guiGraphics.blit(texture, this.getX(), this.getY(), 0, 0, 20, 20, 20, 20);
+        guiGraphics.blit(texture, this.getX(), this.getY(), 0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
 
     @Override

@@ -26,13 +26,14 @@ public class DietGroup implements IDietGroup {
     private final boolean isNegative;
     private final boolean ignoreAttack;
     private final boolean ignoreHunger;
+    private final boolean ignoreSaturation;
     private final TagKey<Item> tag;
     private final String translationKey;
     private final List<String> effects;
 
     DietGroup(String name, Item icon, DietColor color, float defaultValue, int order,
               double gainMultiplier, double decayMultiplier, boolean beneficial, boolean isNegative,
-              boolean ignoreAttack, boolean ignoreHunger,
+              boolean ignoreAttack, boolean ignoreHunger, boolean ignoreSaturation,
               TagKey<Item> tag, String translationKey, List<String> effects) {
         this.name = name;
         this.icon = icon;
@@ -45,6 +46,7 @@ public class DietGroup implements IDietGroup {
         this.isNegative = isNegative;
         this.ignoreAttack = ignoreAttack;
         this.ignoreHunger = ignoreHunger;
+        this.ignoreSaturation = ignoreSaturation;
         this.tag = tag;
         this.translationKey = translationKey;
         this.effects = effects;
@@ -106,6 +108,11 @@ public class DietGroup implements IDietGroup {
     }
 
     @Override
+    public boolean ignoreSaturation() {
+        return ignoreSaturation;
+    }
+
+    @Override
     public TagKey<Item> getTag() {
         return tag;
     }
@@ -137,6 +144,7 @@ public class DietGroup implements IDietGroup {
         tag.putBoolean("IsNegative", isNegative);
         tag.putBoolean("IgnoreAttack", ignoreAttack);
         tag.putBoolean("IgnoreHunger", ignoreHunger);
+        tag.putBoolean("IgnoreSaturation", ignoreSaturation);
         tag.putString("TranslationKey", translationKey);
         return tag;
     }
@@ -154,6 +162,7 @@ public class DietGroup implements IDietGroup {
                 tag.contains("IsNegative") && tag.getBoolean("IsNegative"),
                 tag.contains("IgnoreAttack") && tag.getBoolean("IgnoreAttack"),
                 tag.contains("IgnoreHunger") && tag.getBoolean("IgnoreHunger"),
+                tag.contains("IgnoreSaturation") && tag.getBoolean("IgnoreSaturation"),
                 null,
                 tag.getString("TranslationKey"),
                 Collections.emptyList()
@@ -175,6 +184,7 @@ public class DietGroup implements IDietGroup {
                     data.containsKey("isNegative") && (Boolean) data.get("isNegative"),
                     data.containsKey("ignoreAttack") && (Boolean) data.get("ignoreAttack"),
                     data.containsKey("ignoreHunger") && (Boolean) data.get("ignoreHunger"),
+                    data.containsKey("ignoreSaturation") && (Boolean) data.get("ignoreSaturation"),
                     null,
                     (String) data.get("translationKey"),
                     Collections.emptyList()
@@ -196,6 +206,7 @@ public class DietGroup implements IDietGroup {
         data.put("isNegative", isNegative);
         data.put("ignoreAttack", ignoreAttack);
         data.put("ignoreHunger", ignoreHunger);
+        data.put("ignoreSaturation", ignoreSaturation);
         data.put("translationKey", translationKey);
         return data;
     }
@@ -213,6 +224,7 @@ public class DietGroup implements IDietGroup {
         private boolean isNegative = false;
         private boolean ignoreAttack = false;
         private boolean ignoreHunger = false;
+        private boolean ignoreSaturation = false;
         private TagKey<Item> tag;
         private String translationKey;
         private List<String> effects = Collections.emptyList();
@@ -272,6 +284,11 @@ public class DietGroup implements IDietGroup {
             return this;
         }
 
+        public Builder ignoreSaturation(boolean ignoreSaturation) {
+            this.ignoreSaturation = ignoreSaturation;
+            return this;
+        }
+
         public Builder tag(TagKey<Item> tag) {
             this.tag = tag;
             return this;
@@ -290,7 +307,7 @@ public class DietGroup implements IDietGroup {
         public DietGroup build() {
             return new DietGroup(name, icon, color, defaultValue, order,
                     gainMultiplier, decayMultiplier, beneficial, isNegative,
-                    ignoreAttack, ignoreHunger, tag, translationKey, effects);
+                    ignoreAttack, ignoreHunger, ignoreSaturation, tag, translationKey, effects);
         }
     }
 }

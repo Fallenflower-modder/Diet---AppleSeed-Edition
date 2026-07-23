@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -30,7 +31,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FoodNutritionManager extends SimpleJsonResourceReloadListener implements IDietFoodQuery {
@@ -101,13 +104,24 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     }
 
     private int loadConfigFiles() {
-        File configDir = CONFIG_DIR.toFile();
+        int count = 0;
+        // Load from items/ subdirectory (item food format)
+        count += loadConfigFilesFromDir(CONFIG_DIR.resolve("items"), false);
+        // Load from blocks/ subdirectory (block food format)
+        count += loadConfigFilesFromDir(CONFIG_DIR.resolve("blocks"), true);
+        // Backward compatibility: load from root directory (item food format)
+        count += loadConfigFilesFromDir(CONFIG_DIR, false);
+        return count;
+    }
+
+    private int loadConfigFilesFromDir(java.nio.file.Path dir, boolean isBlockFood) {
+        File configDir = dir.toFile();
         if (!configDir.exists() || !configDir.isDirectory()) {
             return 0;
         }
 
         int count = 0;
-        File[] files = configDir.listFiles((dir, name) -> name.endsWith(".json"));
+        File[] files = configDir.listFiles((d, name) -> name.endsWith(".json"));
         if (files == null) {
             return 0;
         }
@@ -118,12 +132,18 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                 if (element.isJsonArray()) {
                     JsonArray array = element.getAsJsonArray();
                     for (JsonElement item : array) {
-                        if (item.isJsonObject() && parseFoodEntry(item.getAsJsonObject(), file.getName() + " (array)")) {
-                            count++;
+                        if (item.isJsonObject()) {
+                            if (isBlockFood && parseBlockEntry(item.getAsJsonObject(), file.getName() + " (array)")) {
+                                count++;
+                            } else if (!isBlockFood && parseFoodEntry(item.getAsJsonObject(), file.getName() + " (array)")) {
+                                count++;
+                            }
                         }
                     }
                 } else if (element.isJsonObject()) {
-                    if (parseFoodEntry(element.getAsJsonObject(), file.getName())) {
+                    if (isBlockFood && parseBlockEntry(element.getAsJsonObject(), file.getName())) {
+                        count++;
+                    } else if (!isBlockFood && parseFoodEntry(element.getAsJsonObject(), file.getName())) {
                         count++;
                     }
                 }
@@ -131,7 +151,6 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                 AppleSeedConstants.LOG.error("Failed to load config food nutrition: {}", file.getName(), e);
             }
         }
-
         return count;
     }
 
@@ -260,13 +279,13 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
 
     private boolean parseBlockEntry(JsonObject json, String source) {
         try {
-            String sourceBlock = json.get("source_block").getAsString();
-            ResourceLocation blockId = ResourceLocation.tryParse(sourceBlock);
-            Block block = blockId != null ? BuiltInRegistries.BLOCK.get(blockId) : null;
-
-            if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
-                AppleSeedConstants.LOG.warn("Skipping unknown food block '{}' from {}", sourceBlock, source);
-                return false;
+            // enable_tag_search 字段：未定义时日志警告并视为默认值 false
+            boolean enableTagSearch;
+            if (json.has("enable_tag_search")) {
+                enableTagSearch = GsonHelper.getAsBoolean(json, "enable_tag_search", false);
+            } else {
+                AppleSeedConstants.LOG.warn("[parseBlockEntry] 'enable_tag_search' field is missing in {}, defaulting to false", source);
+                enableTagSearch = false;
             }
 
             int bites = GsonHelper.getAsInt(json, "bites", 1);
@@ -281,8 +300,27 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                     }
                 }
             }
-            this.blockNutrition.put(block, nutritions);
-            this.blockBites.put(block, bites);
+
+            // source_block 支持字符串或字符串数组
+            List<Block> targetBlocks = new ArrayList<>();
+            if (json.get("source_block").isJsonArray()) {
+                for (JsonElement elem : json.getAsJsonArray("source_block")) {
+                    String sourceBlock = elem.getAsString();
+                    collectBlocks(sourceBlock, enableTagSearch, targetBlocks, source);
+                }
+            } else {
+                String sourceBlock = json.get("source_block").getAsString();
+                collectBlocks(sourceBlock, enableTagSearch, targetBlocks, source);
+            }
+
+            if (targetBlocks.isEmpty()) {
+                return false;
+            }
+
+            for (Block block : targetBlocks) {
+                this.blockNutrition.put(block, new HashMap<>(nutritions));
+                this.blockBites.put(block, bites);
+            }
             return true;
         } catch (Exception e) {
             AppleSeedConstants.LOG.error("Failed to parse block food entry from {}", source, e);
@@ -290,16 +328,48 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
         }
     }
 
+    /** 收集 source_block 对应的方块。支持普通 ID 和标签 ID（enableTagSearch=true 时） */
+    private void collectBlocks(String sourceBlock, boolean enableTagSearch, List<Block> targetBlocks, String source) {
+        ResourceLocation blockId = ResourceLocation.tryParse(sourceBlock);
+        if (blockId == null) {
+            AppleSeedConstants.LOG.warn("Skipping invalid block id '{}' from {}", sourceBlock, source);
+            return;
+        }
+
+        if (enableTagSearch) {
+            TagKey<Block> tag = TagKey.create(BuiltInRegistries.BLOCK.key(), blockId);
+            BuiltInRegistries.BLOCK.getTag(tag).ifPresentOrElse(
+                    holderSet -> {
+                        for (var holder : holderSet) {
+                            Block block = holder.value();
+                            if (block != net.minecraft.world.level.block.Blocks.AIR) {
+                                targetBlocks.add(block);
+                            }
+                        }
+                    },
+                    () -> AppleSeedConstants.LOG.warn("Tag '{}' has no matching blocks in {}", sourceBlock, source)
+            );
+        } else {
+            Block block = BuiltInRegistries.BLOCK.get(blockId);
+            if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
+                AppleSeedConstants.LOG.warn("Skipping unknown food block '{}' from {}", sourceBlock, source);
+                return;
+            }
+            targetBlocks.add(block);
+        }
+    }
+
     private boolean parseFoodEntry(JsonObject json, String source) {
         try {
             boolean autoCalculated = GsonHelper.getAsBoolean(json, "auto_calculated", false);
-            String sourceItem = json.get("source_item").getAsString();
-            ResourceLocation itemId = ResourceLocation.tryParse(sourceItem);
-            Item item = itemId != null ? BuiltInRegistries.ITEM.get(itemId) : null;
 
-            if (item == null || item == Items.AIR) {
-                AppleSeedConstants.LOG.warn("Skipping unknown food item '{}' from {}", sourceItem, source);
-                return false;
+            // enable_tag_search 字段：未定义时日志警告并视为默认值 false
+            boolean enableTagSearch;
+            if (json.has("enable_tag_search")) {
+                enableTagSearch = GsonHelper.getAsBoolean(json, "enable_tag_search", false);
+            } else {
+                AppleSeedConstants.LOG.warn("[parseFoodEntry] 'enable_tag_search' field is missing in {}, defaulting to false", source);
+                enableTagSearch = false;
             }
 
             Map<String, Float> nutritions = new HashMap<>();
@@ -312,11 +382,61 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                     }
                 }
             }
-            this.foodNutrition.put(item, nutritions);
+
+            // source_item 支持字符串或字符串数组
+            List<Item> targetItems = new ArrayList<>();
+            if (json.get("source_item").isJsonArray()) {
+                for (JsonElement elem : json.getAsJsonArray("source_item")) {
+                    String sourceItem = elem.getAsString();
+                    collectItems(sourceItem, enableTagSearch, targetItems, source);
+                }
+            } else {
+                String sourceItem = json.get("source_item").getAsString();
+                collectItems(sourceItem, enableTagSearch, targetItems, source);
+            }
+
+            if (targetItems.isEmpty()) {
+                return false;
+            }
+
+            for (Item item : targetItems) {
+                this.foodNutrition.put(item, new HashMap<>(nutritions));
+            }
             return true;
         } catch (Exception e) {
             AppleSeedConstants.LOG.error("Failed to parse food entry from {}", source, e);
             return false;
+        }
+    }
+
+    /** 收集 source_item 对应的物品。支持普通 ID 和标签 ID（enableTagSearch=true 时） */
+    private void collectItems(String sourceItem, boolean enableTagSearch, List<Item> targetItems, String source) {
+        ResourceLocation itemId = ResourceLocation.tryParse(sourceItem);
+        if (itemId == null) {
+            AppleSeedConstants.LOG.warn("Skipping invalid item id '{}' from {}", sourceItem, source);
+            return;
+        }
+
+        if (enableTagSearch) {
+            TagKey<Item> tag = TagKey.create(BuiltInRegistries.ITEM.key(), itemId);
+            BuiltInRegistries.ITEM.getTag(tag).ifPresentOrElse(
+                    holderSet -> {
+                        for (var holder : holderSet) {
+                            Item item = holder.value();
+                            if (item != Items.AIR) {
+                                targetItems.add(item);
+                            }
+                        }
+                    },
+                    () -> AppleSeedConstants.LOG.warn("Tag '{}' has no matching items in {}", sourceItem, source)
+            );
+        } else {
+            Item item = BuiltInRegistries.ITEM.get(itemId);
+            if (item == null || item == Items.AIR) {
+                AppleSeedConstants.LOG.warn("Skipping unknown food item '{}' from {}", sourceItem, source);
+                return;
+            }
+            targetItems.add(item);
         }
     }
 

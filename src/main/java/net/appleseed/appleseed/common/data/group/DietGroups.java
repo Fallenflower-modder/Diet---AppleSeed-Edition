@@ -285,6 +285,13 @@ public class DietGroups extends SimpleJsonResourceReloadListener {
         builder.isNegative(GsonHelper.getAsBoolean(json, "is_negative", false));
         builder.ignoreAttack(GsonHelper.getAsBoolean(json, "ignore_attack", false));
         builder.ignoreHunger(GsonHelper.getAsBoolean(json, "ignore_hunger", false));
+        // ignore_saturation 字段：未定义时日志警告并视为默认值 false
+        if (json.has("ignore_saturation")) {
+            builder.ignoreSaturation(GsonHelper.getAsBoolean(json, "ignore_saturation", false));
+        } else {
+            AppleSeedConstants.LOG.warn("[buildGroup] 'ignore_saturation' field is missing in group '{}', defaulting to false", builder.name);
+            builder.ignoreSaturation(false);
+        }
 
         if (json.has("translation_key")) {
             builder.translationKey(GsonHelper.getAsString(json, "translation_key"));
