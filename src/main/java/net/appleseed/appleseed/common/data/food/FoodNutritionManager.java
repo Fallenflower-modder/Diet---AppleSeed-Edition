@@ -38,6 +38,13 @@ import java.util.Map;
 
 public class FoodNutritionManager extends SimpleJsonResourceReloadListener implements IDietFoodQuery {
 
+    /** 直接指定物品/方块 ID — 最高优先级 */
+    private static final int PRIORITY_DIRECT = 3;
+    /** c: 命名空间标签 — 中等优先级 */
+    private static final int PRIORITY_C_TAG = 2;
+    /** 其他标签 — 最低优先级 */
+    private static final int PRIORITY_OTHER_TAG = 1;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final java.nio.file.Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("apple_seed_foods");
     private static final java.nio.file.Path CONFIG_BLOCKS_DIR = FMLPaths.CONFIGDIR.get().resolve("apple_seed_blocks");
@@ -48,6 +55,11 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     final Map<Block, Map<String, Float>> blockNutrition = new HashMap<>();
     final Map<Block, Integer> blockBites = new HashMap<>();
 
+    /** 记录每个物品营养数据的当前优先级，用于防止低优先级数据覆盖高优先级数据 */
+    private final Map<Item, Integer> foodPriority = new HashMap<>();
+    /** 记录每个方块营养数据的当前优先级，用于防止低优先级数据覆盖高优先级数据 */
+    private final Map<Block, Integer> blockPriority = new HashMap<>();
+
     private FoodNutritionManager() {
         super(GSON, "diet/foods");
     }
@@ -57,6 +69,8 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
         this.foodNutrition.clear();
         this.blockNutrition.clear();
         this.blockBites.clear();
+        this.foodPriority.clear();
+        this.blockPriority.clear();
 
         int configCount = loadConfigFiles();
         AppleSeedConstants.LOG.info("Loaded {} config auto-generated food nutrition entries (lowest priority)", configCount);
@@ -303,23 +317,30 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
 
             // source_block 支持字符串或字符串数组
             List<Block> targetBlocks = new ArrayList<>();
+            List<Integer> targetPriorities = new ArrayList<>();
             if (json.get("source_block").isJsonArray()) {
                 for (JsonElement elem : json.getAsJsonArray("source_block")) {
                     String sourceBlock = elem.getAsString();
-                    collectBlocks(sourceBlock, enableTagSearch, targetBlocks, source);
+                    collectBlocks(sourceBlock, enableTagSearch, targetBlocks, targetPriorities, source);
                 }
             } else {
                 String sourceBlock = json.get("source_block").getAsString();
-                collectBlocks(sourceBlock, enableTagSearch, targetBlocks, source);
+                collectBlocks(sourceBlock, enableTagSearch, targetBlocks, targetPriorities, source);
             }
 
             if (targetBlocks.isEmpty()) {
                 return false;
             }
 
-            for (Block block : targetBlocks) {
-                this.blockNutrition.put(block, new HashMap<>(nutritions));
-                this.blockBites.put(block, bites);
+            for (int i = 0; i < targetBlocks.size(); i++) {
+                Block block = targetBlocks.get(i);
+                int priority = targetPriorities.get(i);
+                int currentPriority = this.blockPriority.getOrDefault(block, 0);
+                if (priority >= currentPriority) {
+                    this.blockNutrition.put(block, new HashMap<>(nutritions));
+                    this.blockBites.put(block, bites);
+                    this.blockPriority.put(block, priority);
+                }
             }
             return true;
         } catch (Exception e) {
@@ -329,7 +350,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     }
 
     /** 收集 source_block 对应的方块。支持普通 ID 和标签 ID（enableTagSearch=true 时） */
-    private void collectBlocks(String sourceBlock, boolean enableTagSearch, List<Block> targetBlocks, String source) {
+    private void collectBlocks(String sourceBlock, boolean enableTagSearch, List<Block> targetBlocks, List<Integer> targetPriorities, String source) {
         ResourceLocation blockId = ResourceLocation.tryParse(sourceBlock);
         if (blockId == null) {
             AppleSeedConstants.LOG.warn("Skipping invalid block id '{}' from {}", sourceBlock, source);
@@ -337,6 +358,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
         }
 
         if (enableTagSearch) {
+            int priority = "c".equals(blockId.getNamespace()) ? PRIORITY_C_TAG : PRIORITY_OTHER_TAG;
             TagKey<Block> tag = TagKey.create(BuiltInRegistries.BLOCK.key(), blockId);
             BuiltInRegistries.BLOCK.getTag(tag).ifPresentOrElse(
                     holderSet -> {
@@ -344,6 +366,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                             Block block = holder.value();
                             if (block != net.minecraft.world.level.block.Blocks.AIR) {
                                 targetBlocks.add(block);
+                                targetPriorities.add(priority);
                             }
                         }
                     },
@@ -356,6 +379,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                 return;
             }
             targetBlocks.add(block);
+            targetPriorities.add(PRIORITY_DIRECT);
         }
     }
 
@@ -385,22 +409,29 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
 
             // source_item 支持字符串或字符串数组
             List<Item> targetItems = new ArrayList<>();
+            List<Integer> targetPriorities = new ArrayList<>();
             if (json.get("source_item").isJsonArray()) {
                 for (JsonElement elem : json.getAsJsonArray("source_item")) {
                     String sourceItem = elem.getAsString();
-                    collectItems(sourceItem, enableTagSearch, targetItems, source);
+                    collectItems(sourceItem, enableTagSearch, targetItems, targetPriorities, source);
                 }
             } else {
                 String sourceItem = json.get("source_item").getAsString();
-                collectItems(sourceItem, enableTagSearch, targetItems, source);
+                collectItems(sourceItem, enableTagSearch, targetItems, targetPriorities, source);
             }
 
             if (targetItems.isEmpty()) {
                 return false;
             }
 
-            for (Item item : targetItems) {
-                this.foodNutrition.put(item, new HashMap<>(nutritions));
+            for (int i = 0; i < targetItems.size(); i++) {
+                Item item = targetItems.get(i);
+                int priority = targetPriorities.get(i);
+                int currentPriority = this.foodPriority.getOrDefault(item, 0);
+                if (priority >= currentPriority) {
+                    this.foodNutrition.put(item, new HashMap<>(nutritions));
+                    this.foodPriority.put(item, priority);
+                }
             }
             return true;
         } catch (Exception e) {
@@ -410,7 +441,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     }
 
     /** 收集 source_item 对应的物品。支持普通 ID 和标签 ID（enableTagSearch=true 时） */
-    private void collectItems(String sourceItem, boolean enableTagSearch, List<Item> targetItems, String source) {
+    private void collectItems(String sourceItem, boolean enableTagSearch, List<Item> targetItems, List<Integer> targetPriorities, String source) {
         ResourceLocation itemId = ResourceLocation.tryParse(sourceItem);
         if (itemId == null) {
             AppleSeedConstants.LOG.warn("Skipping invalid item id '{}' from {}", sourceItem, source);
@@ -418,6 +449,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
         }
 
         if (enableTagSearch) {
+            int priority = "c".equals(itemId.getNamespace()) ? PRIORITY_C_TAG : PRIORITY_OTHER_TAG;
             TagKey<Item> tag = TagKey.create(BuiltInRegistries.ITEM.key(), itemId);
             BuiltInRegistries.ITEM.getTag(tag).ifPresentOrElse(
                     holderSet -> {
@@ -425,6 +457,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                             Item item = holder.value();
                             if (item != Items.AIR) {
                                 targetItems.add(item);
+                                targetPriorities.add(priority);
                             }
                         }
                     },
@@ -437,6 +470,7 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
                 return;
             }
             targetItems.add(item);
+            targetPriorities.add(PRIORITY_DIRECT);
         }
     }
 
@@ -482,7 +516,11 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     }
 
     public void putNutritionData(Item item, String group, float value) {
-        this.foodNutrition.computeIfAbsent(item, k -> new HashMap<>()).put(group, value);
+        int currentPriority = this.foodPriority.getOrDefault(item, 0);
+        if (PRIORITY_DIRECT >= currentPriority) {
+            this.foodNutrition.computeIfAbsent(item, k -> new HashMap<>()).put(group, value);
+            this.foodPriority.put(item, PRIORITY_DIRECT);
+        }
     }
 
     public Map<Item, Map<String, Float>> getAllFoodData() {
@@ -522,7 +560,11 @@ public class FoodNutritionManager extends SimpleJsonResourceReloadListener imple
     }
 
     public void putBlockNutritionData(Block block, String group, float value) {
-        this.blockNutrition.computeIfAbsent(block, k -> new HashMap<>()).put(group, value);
+        int currentPriority = this.blockPriority.getOrDefault(block, 0);
+        if (PRIORITY_DIRECT >= currentPriority) {
+            this.blockNutrition.computeIfAbsent(block, k -> new HashMap<>()).put(group, value);
+            this.blockPriority.put(block, PRIORITY_DIRECT);
+        }
     }
 
     public void putBlockBites(Block block, int bites) {
