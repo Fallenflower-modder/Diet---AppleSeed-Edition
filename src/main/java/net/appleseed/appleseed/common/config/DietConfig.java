@@ -35,6 +35,11 @@ public class DietConfig {
     public final ModConfigSpec.BooleanValue ignoreHunger;
     public final ModConfigSpec.ConfigValue<String> entranceVisibility;
     public final ModConfigSpec.IntValue craftChainSearchDepth;
+    public final ModConfigSpec.ConfigValue<String> version;
+    public final ModConfigSpec.IntValue defaultNutritionDecayByHitMultiplier;
+    public final ModConfigSpec.IntValue defaultNutritionDecayByHungerMultiplier;
+    public final ModConfigSpec.IntValue defaultNutritionDecayBySaturationMultiplier;
+    public final ModConfigSpec.BooleanValue forceDecayOverride;
 
     // 预设营养素字段覆盖 - 用于覆盖数据文件中对应字段的值
     // 注意：此处的 ignore_hunger 指"饱食度降低时该营养素是否不减少"，与 General_Settings 中的全局 ignore_hunger（控制饱食度满时是否计算摄入）语义不同
@@ -109,6 +114,39 @@ public class DietConfig {
                         "Default: 3"
                 )
                 .defineInRange("craft_chain_search_depth", 3, 0, 100);
+
+        version = builder
+                .comment("配置文件版本号，用于自动迁移。请勿手动修改。",
+                        "Config file version, used for automatic migration. Do not modify manually.")
+                .define("version", AppleSeedConstants.MOD_VERSION);
+
+        defaultNutritionDecayByHitMultiplier = builder
+                .comment("受击营养值流失系数的默认值（游戏规则初始值），默认1000。",
+                        "仅当 force_decay_override = true 时，该值直接生效为实际衰减量。",
+                        "Default nutrition decay multiplier on hit (game rule initial value). Default: 1000.",
+                        "Only takes effect directly when force_decay_override = true.")
+                .defineInRange("default_nutrition_decay_by_hit_multiplier", 1000, 0, 100000000);
+
+        defaultNutritionDecayByHungerMultiplier = builder
+                .comment("饥饿营养值流失系数的默认值（游戏规则初始值），默认5000。",
+                        "仅当 force_decay_override = true 时，该值直接生效为实际衰减量。",
+                        "Default nutrition decay multiplier on hunger loss (game rule initial value). Default: 5000.",
+                        "Only takes effect directly when force_decay_override = true.")
+                .defineInRange("default_nutrition_decay_by_hunger_multiplier", 5000, 0, 100000000);
+
+        defaultNutritionDecayBySaturationMultiplier = builder
+                .comment("饱和度营养值流失系数的默认值（游戏规则初始值），默认0。",
+                        "仅当 force_decay_override = true 时，该值直接生效为实际衰减量。",
+                        "Default nutrition decay multiplier on saturation loss (game rule initial value). Default: 0.",
+                        "Only takes effect directly when force_decay_override = true.")
+                .defineInRange("default_nutrition_decay_by_saturation_multiplier", 0, 0, 100000000);
+
+        forceDecayOverride = builder
+                .comment("强制覆盖衰减系数：设为true时，游戏规则的修改不再影响实际衰减量，",
+                        "实际衰减量改为以 default_nutrition_decay_by_xxx_multiplier 字段为准。",
+                        "Force decay override: when true, game rule changes no longer affect actual decay.",
+                        "Actual decay is determined by default_nutrition_decay_by_xxx_multiplier fields instead.")
+                .define("force_decay_override", false);
 
         builder.pop();
 
@@ -361,5 +399,68 @@ public class DietConfig {
             return EntranceVisibility.DEFAULT;
         }
         return raw;
+    }
+
+    /**
+     * 获取实际生效的受击衰减系数（整数形式，实际值 = 返回值 / DECAY_MULTIPLIER_SCALE）。
+     * 当 force_decay_override = true 时，返回配置项中的值，忽略游戏规则。
+     * 否则返回游戏规则中的值。
+     *
+     * @param gameRuleValue 游戏规则中的整数值
+     * @return 实际生效的整数值
+     */
+    public static int getEffectiveHitDecayMultiplier(int gameRuleValue) {
+        return INSTANCE.forceDecayOverride.get()
+                ? INSTANCE.defaultNutritionDecayByHitMultiplier.get()
+                : gameRuleValue;
+    }
+
+    /**
+     * 获取实际生效的饥饿衰减系数（整数形式，实际值 = 返回值 / DECAY_MULTIPLIER_SCALE）。
+     */
+    public static int getEffectiveHungerDecayMultiplier(int gameRuleValue) {
+        return INSTANCE.forceDecayOverride.get()
+                ? INSTANCE.defaultNutritionDecayByHungerMultiplier.get()
+                : gameRuleValue;
+    }
+
+    /**
+     * 获取实际生效的饱和度衰减系数（整数形式，实际值 = 返回值 / DECAY_MULTIPLIER_SCALE）。
+     */
+    public static int getEffectiveSaturationDecayMultiplier(int gameRuleValue) {
+        return INSTANCE.forceDecayOverride.get()
+                ? INSTANCE.defaultNutritionDecayBySaturationMultiplier.get()
+                : gameRuleValue;
+    }
+
+    /**
+     * 获取配置中指定的受击衰减系数默认值（整数形式）。
+     * 用于游戏规则初始化时设置初始值。
+     */
+    public static int getDefaultHitDecayMultiplier() {
+        return INSTANCE.defaultNutritionDecayByHitMultiplier.get();
+    }
+
+    /**
+     * 获取配置中指定的饥饿衰减系数默认值（整数形式）。
+     * 用于游戏规则初始化时设置初始值。
+     */
+    public static int getDefaultHungerDecayMultiplier() {
+        return INSTANCE.defaultNutritionDecayByHungerMultiplier.get();
+    }
+
+    /**
+     * 获取配置中指定的饱和度衰减系数默认值（整数形式）。
+     * 用于游戏规则初始化时设置初始值。
+     */
+    public static int getDefaultSaturationDecayMultiplier() {
+        return INSTANCE.defaultNutritionDecayBySaturationMultiplier.get();
+    }
+
+    /**
+     * 返回当前配置文件的版本号。
+     */
+    public static String getConfigVersion() {
+        return INSTANCE.version.get();
     }
 }

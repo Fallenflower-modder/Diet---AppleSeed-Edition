@@ -30,6 +30,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -46,7 +47,11 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Mod(AppleSeed.MOD_ID)
 public class AppleSeed {
@@ -58,11 +63,14 @@ public class AppleSeed {
     public static GameRules.Key<GameRules.IntegerValue> RULE_DECAY_BY_SATURATION;
 
     /** 游戏规则以整数存储，实际系数 = 整数值 / DECAY_MULTIPLIER_SCALE */
-    private static final int DECAY_MULTIPLIER_SCALE = 1_000_000;
+    public static final int DECAY_MULTIPLIER_SCALE = 1_000_000;
 
     private static final java.util.Map<Player, Integer> prevFoodLevels = new java.util.WeakHashMap<>();
     private static final java.util.Map<Player, Float> prevSaturationLevels = new java.util.WeakHashMap<>();
     private static final java.util.Map<java.util.UUID, java.util.Map<String, Float>> deathNutritionCache = new java.util.HashMap<>();
+
+    /** 配置文件引用，用于版本迁移 */
+    private static ModConfig commonConfig;
 
     public AppleSeed(IEventBus bus, ModContainer container) {
         bus.register(RecipeRegistry.class);
@@ -81,23 +89,26 @@ public class AppleSeed {
         NeoForge.EVENT_BUS.addListener(this::onPlayerHurt);
         NeoForge.EVENT_BUS.register(BlockFoodEventHandler.class);
 
-        container.registerConfig(ModConfig.Type.COMMON, DietConfig.SPEC);
+        commonConfig = ConfigTracker.INSTANCE.registerConfig(ModConfig.Type.COMMON, DietConfig.SPEC, container);
 
         DietQuery.setInstance(FoodNutritionManager.INSTANCE);
         DietDecayQuery.setInstance(new IDietDecayQuery() {
             @Override
             public double getHitDecayMultiplier(Player player) {
-                return player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get() / (double) DECAY_MULTIPLIER_SCALE;
+                return DietConfig.getEffectiveHitDecayMultiplier(
+                        player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get()) / (double) DECAY_MULTIPLIER_SCALE;
             }
 
             @Override
             public double getHungerDecayMultiplier(Player player) {
-                return player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get() / (double) DECAY_MULTIPLIER_SCALE;
+                return DietConfig.getEffectiveHungerDecayMultiplier(
+                        player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get()) / (double) DECAY_MULTIPLIER_SCALE;
             }
 
             @Override
             public double getSaturationDecayMultiplier(Player player) {
-                return player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get() / (double) DECAY_MULTIPLIER_SCALE;
+                return DietConfig.getEffectiveSaturationDecayMultiplier(
+                        player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get()) / (double) DECAY_MULTIPLIER_SCALE;
             }
         });
 
@@ -119,7 +130,8 @@ public class AppleSeed {
         Integer prevFood = prevFoodLevels.get(player);
         if (prevFood != null && currentFood < prevFood) {
             int lost = prevFood - currentFood;
-            double hungerMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get() / (double) DECAY_MULTIPLIER_SCALE;
+            double hungerMultiplier = DietConfig.getEffectiveHungerDecayMultiplier(
+                    player.level().getGameRules().getRule(RULE_DECAY_BY_HUNGER).get()) / (double) DECAY_MULTIPLIER_SCALE;
             float baseDecay = lost * (float) hungerMultiplier;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
                 if (DietConfig.isGroupIgnoreHunger(group.getName(), group.ignoreHunger())) {
@@ -142,7 +154,8 @@ public class AppleSeed {
         Float prevSaturation = prevSaturationLevels.get(player);
         if (prevSaturation != null && currentSaturation < prevSaturation) {
             float lost = prevSaturation - currentSaturation;
-            double saturationMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get() / (double) DECAY_MULTIPLIER_SCALE;
+            double saturationMultiplier = DietConfig.getEffectiveSaturationDecayMultiplier(
+                    player.level().getGameRules().getRule(RULE_DECAY_BY_SATURATION).get()) / (double) DECAY_MULTIPLIER_SCALE;
             float baseDecay = lost * (float) saturationMultiplier;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
                 if (DietConfig.isGroupIgnoreSaturation(group.getName(), group.ignoreSaturation())) {
@@ -174,7 +187,8 @@ public class AppleSeed {
             return;
         }
         if (event.getEntity() instanceof Player player) {
-            double hitMultiplier = player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get() / (double) DECAY_MULTIPLIER_SCALE;
+            double hitMultiplier = DietConfig.getEffectiveHitDecayMultiplier(
+                    player.level().getGameRules().getRule(RULE_DECAY_BY_HIT).get()) / (double) DECAY_MULTIPLIER_SCALE;
             float baseDecay = (float) hitMultiplier;
             for (IDietGroup group : DietGroups.getGroups(player.level())) {
                 if (DietConfig.isGroupIgnoreAttack(group.getName(), group.ignoreAttack())) {
@@ -312,11 +326,15 @@ public class AppleSeed {
         RULE_KEEPNUTRITIONS = GameRules.register("keepNutritions", GameRules.Category.PLAYER,
                 GameRules.BooleanValue.create(false));
         RULE_DECAY_BY_HIT = GameRules.register("nutritionDecayByHitMultiplier", GameRules.Category.PLAYER,
-                GameRules.IntegerValue.create((int) (0.001 * DECAY_MULTIPLIER_SCALE)));
+                GameRules.IntegerValue.create(DietConfig.getDefaultHitDecayMultiplier()));
         RULE_DECAY_BY_HUNGER = GameRules.register("nutritionDecayByHungerMultiplier", GameRules.Category.PLAYER,
-                GameRules.IntegerValue.create((int) (0.005 * DECAY_MULTIPLIER_SCALE)));
+                GameRules.IntegerValue.create(DietConfig.getDefaultHungerDecayMultiplier()));
         RULE_DECAY_BY_SATURATION = GameRules.register("nutritionDecayBySaturationMultiplier", GameRules.Category.PLAYER,
-                GameRules.IntegerValue.create((int) (0.0 * DECAY_MULTIPLIER_SCALE)));
+                GameRules.IntegerValue.create(DietConfig.getDefaultSaturationDecayMultiplier()));
+
+        // 配置文件版本迁移检查
+        performConfigVersionMigration();
+
         FoodNutritionAutoCalculator.ensureConfigDir();
         AppleSeedConstants.LOG.info("AppleSeed initialized!");
     }
@@ -361,6 +379,75 @@ public class AppleSeed {
         event.addListener(FoodNutritionManager.INSTANCE);
         event.addListener(FoodNutritionManager.CLIENT);
         DietEffects.clearCache();
+    }
+
+    /**
+     * 检查配置文件版本，若版本不匹配则执行迁移。
+     * 迁移流程：读取原始TOML文件检测version字段 → 保存当前内存配置值 → 覆盖写入配置文件。
+     */
+    private void performConfigVersionMigration() {
+        if (commonConfig == null) {
+            AppleSeedConstants.LOG.warn("[ConfigMigration] commonConfig is null, skipping version check");
+            return;
+        }
+
+        String configVersion = readVersionFromConfigFile();
+        if (configVersion == null) {
+            AppleSeedConstants.LOG.info("[ConfigMigration] No version field found in config file. "
+                    + "Performing migration to version {}.", AppleSeedConstants.MOD_VERSION);
+            saveConfigFile();
+            AppleSeedConstants.LOG.info("[ConfigMigration] Config file has been migrated to version {}",
+                    AppleSeedConstants.MOD_VERSION);
+        } else if (!AppleSeedConstants.MOD_VERSION.equals(configVersion)) {
+            AppleSeedConstants.LOG.info("[ConfigMigration] Config version mismatch: file='{}', mod='{}'. "
+                    + "Performing migration.", configVersion, AppleSeedConstants.MOD_VERSION);
+            saveConfigFile();
+            AppleSeedConstants.LOG.info("[ConfigMigration] Config file has been migrated from version {} to {}",
+                    configVersion, AppleSeedConstants.MOD_VERSION);
+        }
+    }
+
+    /**
+     * 从原始TOML配置文件中读取version字段。
+     * 返回null表示文件中没有version字段。
+     */
+    private static String readVersionFromConfigFile() {
+        if (commonConfig == null) {
+            return null;
+        }
+        try {
+            Path configPath = commonConfig.getFullPath();
+            if (!Files.exists(configPath)) {
+                return null;
+            }
+            String content = Files.readString(configPath);
+            // 匹配 version = "xxx" 或 version = 'xxx'
+            Pattern pattern = Pattern.compile("^\\s*version\\s*=\\s*\"([^\"]*)\"", Pattern.MULTILINE);
+            Matcher matcher = pattern.matcher(content);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+            return null;
+        } catch (Exception e) {
+            AppleSeedConstants.LOG.warn("[ConfigMigration] Failed to read config file version: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 将当前配置值写入配置文件（通过 ILoadedConfig.save()）。
+     */
+    private void saveConfigFile() {
+        if (commonConfig == null) {
+            AppleSeedConstants.LOG.warn("[ConfigMigration] Cannot save config: commonConfig is null");
+            return;
+        }
+        var loadedConfig = commonConfig.getLoadedConfig();
+        if (loadedConfig == null) {
+            AppleSeedConstants.LOG.warn("[ConfigMigration] Cannot save config: loadedConfig is null");
+            return;
+        }
+        loadedConfig.save();
     }
 
     private void onItemUseFinish(final LivingEntityUseItemEvent.Finish event) {
